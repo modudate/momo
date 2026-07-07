@@ -61,6 +61,28 @@ export default function RegionPage() {
   const [month, setMonth] = useState(() => Number(today.slice(5, 7)) - 1); // 0-based
   const [selected, setSelected] = useState<string>(today);
   const [calOpen, setCalOpen] = useState(false);
+  const [holidays, setHolidays] = useState<Record<string, string>>({}); // "YYYY-MM-DD" → 이름
+
+  // 공휴일 로드 (올해 + 내년)
+  useEffect(() => {
+    let active = true;
+    const y = Number(today.slice(0, 4));
+    Promise.all(
+      [y, y + 1].map((yy) =>
+        fetch(`/api/holidays?year=${yy}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null),
+      ),
+    ).then((results) => {
+      if (!active) return;
+      const merged: Record<string, string> = {};
+      results.forEach((r) => r?.holidays && Object.assign(merged, r.holidays));
+      setHolidays(merged);
+    });
+    return () => {
+      active = false;
+    };
+  }, [today]);
 
   useEffect(() => {
     let active = true;
@@ -158,12 +180,27 @@ export default function RegionPage() {
               <span
                 className="dstrip-day"
                 style={
-                  isSel ? undefined : { color: s.dow === 0 ? "#e5484d" : s.dow === 6 ? "#3182f6" : undefined }
+                  isSel
+                    ? undefined
+                    : {
+                        color:
+                          holidays[s.key] || s.dow === 0
+                            ? "#e5484d"
+                            : s.dow === 6
+                              ? "#3182f6"
+                              : undefined,
+                      }
                 }
               >
                 {s.day}
               </span>
-              <span className="dstrip-dow">{DOW[s.dow]}</span>
+              <span
+                className="dstrip-dow"
+                style={isSel ? undefined : holidays[s.key] ? { color: "#e5484d" } : undefined}
+                title={holidays[s.key] ?? undefined}
+              >
+                {holidays[s.key] ? "휴일" : DOW[s.dow]}
+              </span>
               <span className={`dstrip-dot ${has ? "on" : ""}`} />
             </button>
           );
@@ -230,9 +267,11 @@ export default function RegionPage() {
                     key={key}
                     type="button"
                     onClick={() => pickFromCalendar(key)}
+                    title={holidays[key] ?? undefined}
                     className={`cal-cell ${has ? "cal-cell-has" : ""} ${
                       isSel ? "cal-cell-selected" : ""
                     }`}
+                    style={!isSel && holidays[key] ? { color: "#e5484d" } : undefined}
                   >
                     {d}
                     {has && <span className="cal-dot" />}

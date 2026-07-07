@@ -2381,6 +2381,18 @@ body.with-bottom-nav .app-main {
 .res-num-sun {
   color: #e5484d;
 }
+.res-holiday {
+  display: inline-block;
+  margin-left: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #e5484d;
+  vertical-align: 1px;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .res-num-sat {
   color: #3182f6;
 }

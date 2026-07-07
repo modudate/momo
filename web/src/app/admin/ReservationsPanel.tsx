@@ -89,6 +89,7 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
 
   const [meetings, setMeetings] = useState<ResMeeting[]>([]);
   const [loading, setLoading] = useState(true);
+  const [holidays, setHolidays] = useState<Record<string, string>>({}); // 공휴일
 
   // 참석자 명단 모달
   const [selected, setSelected] = useState<ResMeeting | null>(null);
@@ -151,6 +152,20 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
   useEffect(() => {
     load();
   }, [load]);
+
+  // 해당 연도 공휴일 로드
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/holidays?year=${year}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (active && d?.holidays) setHolidays((prev) => ({ ...prev, ...d.holidays }));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [year]);
 
   // 모달 열릴 때 배경 스크롤 잠금
   useEffect(() => {
@@ -469,8 +484,15 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
                   >
                     {cell.date && (
                       <>
-                        <div className={`res-cell-num ${dow === 0 ? "res-num-sun" : ""} ${dow === 6 ? "res-num-sat" : ""}`}>
+                        <div
+                          className={`res-cell-num ${dow === 0 || holidays[cell.date] ? "res-num-sun" : ""} ${dow === 6 && !holidays[cell.date] ? "res-num-sat" : ""}`}
+                        >
                           {Number(cell.date.slice(8, 10))}
+                          {holidays[cell.date] && (
+                            <span className="res-holiday" title={holidays[cell.date]}>
+                              {holidays[cell.date]}
+                            </span>
+                          )}
                         </div>
                         <div className="res-cell-list">
                           {cell.items.map((m) => {
