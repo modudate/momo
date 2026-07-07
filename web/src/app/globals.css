@@ -1211,7 +1211,8 @@ body {
   height: var(--header-h);
   display: flex;
   align-items: center;
-  padding: 0 28px; /* 메뉴와 동일 */
+  justify-content: center; /* 로고 중앙 정렬 */
+  padding: 0 28px;
   background: #fff;
   border-bottom: 1px solid var(--border-subtle);
 }
