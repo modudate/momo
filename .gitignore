@@ -1,0 +1,29 @@
+# dependencies
+node_modules/
+demo/node_modules/
+
+# next.js
+demo/.next/
+demo/out/
+
+# env
+.env
+.env.local
+.env*.local
+
+# debug
+npm-debug.log*
+
+# vercel
+.vercel
+
+# os
+.DS_Store
+Thumbs.db
+
+# local tooling
+.claude/
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
