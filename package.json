@@ -2,9 +2,9 @@
   "name": "moso-homepage",
   "private": true,
   "scripts": {
-    "dev": "npm run dev --prefix demo",
-    "build": "npm run build --prefix demo",
-    "start": "npm run start --prefix demo",
-    "install:all": "npm install --prefix demo"
+    "dev": "npm run dev --prefix web",
+    "build": "npm run build --prefix web",
+    "start": "npm run start --prefix web",
+    "install:all": "npm install --prefix web"
   }
 }
