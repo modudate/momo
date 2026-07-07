@@ -95,14 +95,16 @@ body {
 
 /* ---- Typography ---- */
 .tds-title-xl {
-  font-size: 26px;
+  font-size: clamp(22px, 6.4vw, 26px);
+  word-break: keep-all;
   font-weight: 700;
   line-height: 1.25;
   color: var(--text-primary);
   letter-spacing: -0.02em;
 }
 .tds-title-lg {
-  font-size: 22px;
+  font-size: clamp(19px, 5.6vw, 22px); /* 좁은 화면 자동 축소 */
+  word-break: keep-all;
   font-weight: 700;
   line-height: 1.3;
   color: var(--text-primary);
@@ -1324,7 +1326,8 @@ body {
   margin-bottom: 14px;
 }
 .home-sec-title {
-  font-size: 21px;
+  font-size: clamp(17px, 5.2vw, 21px);
+  word-break: keep-all;
   font-weight: 800;
   color: var(--text-primary);
   letter-spacing: -0.02em;
@@ -1779,6 +1782,13 @@ body {
   gap: 4px;
   font-size: 13px;
   color: var(--text-secondary);
+  min-width: 0;
+}
+.evt-mtxt {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 .evt-meta svg {
   color: var(--text-tertiary);
@@ -3134,5 +3144,113 @@ body.with-bottom-nav .app-main {
 @media (max-width: 900px) {
   .bl-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+
+/* ============================================================
+   소형 화면 반응형 축소 (S24·아이폰 등 <=430px)
+   ============================================================ */
+@media (max-width: 430px) {
+  /* 날짜 스트립 — 한 화면에 7일 정도 보이게 */
+  .dstrip {
+    gap: 2px;
+    padding: 10px 12px 4px;
+  }
+  .dstrip-item {
+    min-width: 44px;
+    padding: 6px 3px 7px;
+  }
+  .dstrip-day {
+    font-size: 15.5px;
+  }
+  .dstrip-dow {
+    font-size: 10.5px;
+  }
+  .dstrip-calbtn {
+    padding: 7px 10px;
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  /* 신청 카드 — 이미지·글씨·버튼 축소 */
+  .evt-card {
+    padding: 10px;
+    gap: 8px;
+  }
+  .evt-top {
+    gap: 10px;
+  }
+  .evt-thumb {
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+  }
+  .evt-title {
+    font-size: 14.5px;
+  }
+  .evt-meta {
+    font-size: 12px;
+    gap: 3px;
+  }
+  .evt-info {
+    gap: 4px;
+  }
+  .evt-apply-side {
+    padding: 9px 12px;
+    font-size: 13px;
+    border-radius: 10px;
+  }
+
+  /* 상세 인원현황/티켓 */
+  .crowd {
+    gap: 6px;
+  }
+  .crowd-cell {
+    padding: 10px 2px;
+  }
+  .crowd-num {
+    font-size: 16px;
+  }
+  .crowd-label {
+    font-size: 10.5px;
+  }
+  .tk-label {
+    font-size: 14px;
+  }
+  .tk-meta {
+    font-size: 12px;
+  }
+  .tk-stepper button {
+    width: 31px;
+    height: 31px;
+  }
+
+  /* 홈 카드/뱃지 */
+  .home-meet-title {
+    font-size: 16.5px;
+  }
+  .home-card-label {
+    font-size: 12.5px;
+    margin-top: 11px;
+  }
+  .home-badge-dark,
+  .home-tag {
+    font-size: 10px;
+    padding: 3px 5px;
+  }
+
+  /* 히어로 카피 */
+  .home-hero-badge {
+    font-size: 12px;
+    padding: 3px 9px;
+  }
+  .home-hero-sub {
+    font-size: 14.5px;
+  }
+
+  /* 참가자 폼 */
+  .att-row .att-birth {
+    width: 104px;
   }
 }

@@ -156,7 +156,11 @@ export default function RegionPage() {
       <div className="page-content pt-4 flex items-end justify-between">
         <div>
           <p className="tds-caption">{region.area}</p>
-          <h2 className="tds-title-lg mt-0.5">일정을 한눈에, 바로 신청하세요</h2>
+          <h2 className="tds-title-lg mt-0.5">
+            일정을 한눈에,
+            <br />
+            바로 신청하세요
+          </h2>
         </div>
         <button type="button" className="dstrip-calbtn" onClick={() => setCalOpen(true)}>
           <CalendarDays size={15} /> 캘린더로 보기
@@ -310,12 +314,14 @@ export default function RegionPage() {
                       {closed && <span className="evt-closed-chip">마감</span>}
                     </p>
                     <p className="evt-meta">
-                      <Clock size={13} /> {e.time} · {e.tag}
+                      <Clock size={13} />
+                      <span className="evt-mtxt">{e.time} · {e.tag}</span>
                     </p>
                     <p className="evt-meta">
                       <Users size={13} />
-                      <span className="evt-male">남 {e.male ?? 0}</span> ·{" "}
-                      <span className="evt-female">여 {e.female ?? 0}</span> · {e.joined}/{e.capacity}명
+                      <span className="evt-mtxt">
+                        <b className="evt-male">남 {e.male ?? 0}</b> · <b className="evt-female">여 {e.female ?? 0}</b> · {e.joined}/{e.capacity}명
+                      </span>
                     </p>
                     <p className="evt-meta">
                       <b className="evt-price">{formatKRW(e.price)}</b>
