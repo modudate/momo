@@ -81,7 +81,8 @@ export default function TemplateSchedulePage() {
   const [recurTime, setRecurTime] = useState("19:30");
 
   const [options, setOptions] = useState<TemplateOption[]>([]);
-  const emptyOption = { label: "", gender: "male", ageGroup: "", price: 30000, capacity: 8 };
+  // capacity 0 = 옵션별 정원 없음 (상품 전체 정원만 적용)
+  const emptyOption = { label: "", gender: "male", ageGroup: "", price: 30000, capacity: 0 };
   const [optionForm, setOptionForm] = useState(emptyOption);
   const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
 
@@ -246,7 +247,7 @@ export default function TemplateSchedulePage() {
           <div className="admin-card" style={{ marginBottom: 20 }}>
             <div className="admin-card-head">
               <span className="admin-card-title flex items-center gap-1.5">
-                <Tag size={16} /> 판매 옵션 (성별·나이대별 가격/정원)
+                <Tag size={16} /> 판매 옵션 (성별·나이대별 가격 — 정원은 상품 전체 정원만 적용)
               </span>
             </div>
             <div className="admin-card-pad">
@@ -283,14 +284,6 @@ export default function TemplateSchedulePage() {
                   value={optionForm.price}
                   onChange={(e) => setOptionForm({ ...optionForm, price: Number(e.target.value) })}
                 />
-                <input
-                  className="admin-input"
-                  style={{ width: 80 }}
-                  type="number"
-                  placeholder="정원"
-                  value={optionForm.capacity}
-                  onChange={(e) => setOptionForm({ ...optionForm, capacity: Number(e.target.value) })}
-                />
                 <button type="submit" className="admin-btn admin-btn-primary">
                   {editingOptionId ? <Pencil size={15} /> : <Plus size={15} />}
                   {editingOptionId ? "수정" : "추가"}
@@ -322,7 +315,6 @@ export default function TemplateSchedulePage() {
                         <th>성별</th>
                         <th>나이대</th>
                         <th>가격</th>
-                        <th>정원</th>
                         <th></th>
                       </tr>
                     </thead>
@@ -333,7 +325,6 @@ export default function TemplateSchedulePage() {
                           <td>{genderLabel(option.gender)}</td>
                           <td>{option.age_group || "-"}</td>
                           <td>{formatKRW(option.price)}</td>
-                          <td>{option.capacity}</td>
                           <td>
                             <div className="flex gap-1.5 justify-end">
                               <button className="admin-btn admin-btn-ghost admin-btn-sm admin-btn-icon" onClick={() => editOption(option)}>

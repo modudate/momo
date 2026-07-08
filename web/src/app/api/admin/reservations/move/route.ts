@@ -42,7 +42,15 @@ export async function POST(req: Request) {
     .single<{ id: string; capacity: number }>();
   if (!target) return NextResponse.json({ error: "target_not_found" }, { status: 404 });
 
-  // 대상 일정 잔여석 검증
+  // 대상 일정 잔여석 검증 — 전체 정원은 항상, 옵션별 정원은 설정된 경우(>0)만
+  const { count } = await admin
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("meeting_id", body.targetMeetingId)
+    .neq("status", "cancelled");
+  if ((count ?? 0) >= target.capacity) {
+    return NextResponse.json({ error: "target_full" }, { status: 409 });
+  }
   if (order.option_id) {
     const options = await getMeetingOptions(body.targetMeetingId);
     const opt = options.find((o) => o.id === order.option_id);
@@ -50,16 +58,7 @@ export async function POST(req: Request) {
       // 대상이 다른 상품(템플릿)이라 같은 옵션이 없음
       return NextResponse.json({ error: "option_not_in_target" }, { status: 400 });
     }
-    if (opt.joined >= opt.capacity) {
-      return NextResponse.json({ error: "target_full" }, { status: 409 });
-    }
-  } else {
-    const { count } = await admin
-      .from("orders")
-      .select("id", { count: "exact", head: true })
-      .eq("meeting_id", body.targetMeetingId)
-      .neq("status", "cancelled");
-    if ((count ?? 0) >= target.capacity) {
+    if (opt.capacity > 0 && opt.joined >= opt.capacity) {
       return NextResponse.json({ error: "target_full" }, { status: 409 });
     }
   }

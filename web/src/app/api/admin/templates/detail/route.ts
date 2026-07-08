@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { isAdminAllowed } from "@/lib/admin";
 import { getAdminClient } from "@/lib/supabase/admin";
 
-export type DetailBlock = { type: "text"; text: string } | { type: "image"; url: string };
+export type DetailBlock =
+  | { type: "text"; text: string }
+  | { type: "image"; url: string }
+  | { type: "html"; html: string };
 
 function isValidBlocks(v: unknown): v is DetailBlock[] {
   if (!Array.isArray(v) || v.length > 200) return false;
@@ -11,8 +14,19 @@ function isValidBlocks(v: unknown): v is DetailBlock[] {
       b &&
       typeof b === "object" &&
       (((b as { type?: string }).type === "text" && typeof (b as { text?: unknown }).text === "string") ||
-        ((b as { type?: string }).type === "image" && typeof (b as { url?: unknown }).url === "string")),
+        ((b as { type?: string }).type === "image" && typeof (b as { url?: unknown }).url === "string") ||
+        ((b as { type?: string }).type === "html" &&
+          typeof (b as { html?: unknown }).html === "string" &&
+          ((b as { html: string }).html.length <= 500_000))),
   );
+}
+
+// 에디터 HTML 정리 — 스크립트류 제거 (작성자는 관리자뿐이지만 방어적으로)
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(/<\/?(script|style|iframe|object|embed|link|meta)\b[^>]*>/gi, "")
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/(href|src)\s*=\s*(["']?)\s*javascript:[^"'>\s]*\2/gi, "");
 }
 
 // 상품 상세 블록 조회 — /api/admin/templates/detail?id=tpl-xxx
@@ -52,10 +66,13 @@ export async function PUT(req: Request) {
   if (!isValidBlocks(body.detail)) {
     return NextResponse.json({ error: "detail_invalid" }, { status: 400 });
   }
+  const detail = body.detail.map((b) =>
+    b.type === "html" ? { ...b, html: sanitizeHtml(b.html) } : b,
+  );
 
   const { error } = await admin
     .from("moim_templates")
-    .update({ detail: body.detail })
+    .update({ detail })
     .eq("id", body.id);
   if (error) {
     return NextResponse.json({ error: "save_failed", detail: error.message }, { status: 500 });

@@ -57,7 +57,8 @@ export async function POST(req: Request) {
     gender: body.gender ?? "any",
     age_group: body.ageGroup ?? "",
     price: body.price ?? 0,
-    capacity: body.capacity ?? 8,
+    // 0 = 옵션별 정원 없음 (상품 전체 정원만 적용)
+    capacity: body.capacity ?? 0,
     sort: body.sort ?? 0,
   });
   if (error) return NextResponse.json({ error: "create_failed", detail: error.message }, { status: 500 });

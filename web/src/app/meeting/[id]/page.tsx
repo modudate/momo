@@ -20,7 +20,10 @@ type MeetingOption = {
   joined: number;
 };
 
-type DetailBlock = { type: "text"; text: string } | { type: "image"; url: string };
+type DetailBlock =
+  | { type: "text"; text: string }
+  | { type: "image"; url: string }
+  | { type: "html"; html: string };
 
 type Counts = { capacity: number; total: number; male: number; female: number };
 
@@ -307,7 +310,10 @@ export default function MeetingDetailPage() {
         {meeting.detail.length > 0 ? (
           <div className="detail-view">
             {meeting.detail.map((block, i) =>
-              block.type === "text" ? (
+              block.type === "html" ? (
+                // 게시판식 에디터 저장분 — 관리자 작성 + 저장 시 정리(sanitize)됨
+                <div key={i} className="rich-view" dangerouslySetInnerHTML={{ __html: block.html }} />
+              ) : block.type === "text" ? (
                 <p key={i} className="tds-subtitle whitespace-pre-line">
                   {block.text}
                 </p>
@@ -385,7 +391,8 @@ export default function MeetingDetailPage() {
                 <div className="flex-1 overflow-y-auto mt-3 flex flex-col gap-2 pb-2">
                   {hasOptions ? (
                     meeting.options.map((option) => {
-                      const optLeft = option.capacity - option.joined;
+                      // 옵션 정원 0 = 옵션별 정원 없음 → 전체 잔여석만 적용
+                      const optLeft = option.capacity > 0 ? option.capacity - option.joined : spotsLeft;
                       const gClosed = isGenderClosed(meeting, option.gender);
                       const optClosed = optLeft <= 0 || gClosed || meetingClosed;
                       const n = qty[option.id] ?? 0;

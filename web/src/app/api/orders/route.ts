@@ -112,8 +112,8 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "gender_closed" }, { status: 409 });
       }
       perOption.set(option.id, (perOption.get(option.id) ?? 0) + 1);
-      // 옵션 정원 1차 검증 (최종 검증은 RPC 트랜잭션에서 원자적으로 재수행)
-      if (option.joined + (perOption.get(option.id) ?? 0) > option.capacity) {
+      // 옵션 정원 1차 검증 — 0이면 옵션별 정원 없음(전체 정원만 적용). 최종 검증은 RPC 트랜잭션에서 원자적으로 재수행
+      if (option.capacity > 0 && option.joined + (perOption.get(option.id) ?? 0) > option.capacity) {
         return NextResponse.json({ error: "sold_out" }, { status: 409 });
       }
       rows.push({

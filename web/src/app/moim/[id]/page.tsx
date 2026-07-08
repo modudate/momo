@@ -41,7 +41,10 @@ export default async function MoimDetailPage({
           <p className="tds-caption py-16 text-center">상세 내용이 곧 등록됩니다.</p>
         ) : (
           blocks.map((block, i) =>
-            block.type === "text" ? (
+            block.type === "html" ? (
+              // 게시판식 에디터 저장분 — 관리자 작성 + 저장 시 정리(sanitize)됨
+              <div key={i} className="rich-view" dangerouslySetInnerHTML={{ __html: block.html }} />
+            ) : block.type === "text" ? (
               <p key={i} className="moim-view-text">
                 {block.text}
               </p>

@@ -101,7 +101,10 @@ export async function getRegionWithEvents(slug: string): Promise<Region | null> 
   };
 }
 
-export type DetailBlock = { type: "text"; text: string } | { type: "image"; url: string };
+export type DetailBlock =
+  | { type: "text"; text: string }
+  | { type: "image"; url: string }
+  | { type: "html"; html: string }; // 게시판식 에디터 저장분
 
 // 손님에게 보이는 인원 (실구매 + 가상구매)
 export type MeetingCounts = {

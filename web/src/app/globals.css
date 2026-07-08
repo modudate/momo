@@ -2430,6 +2430,52 @@ select.auth-input {
   white-space: pre-line;
   word-break: keep-all;
 }
+
+/* ── 리치 상세 본문 (게시판식 에디터 결과물) — 에디터·공개 페이지 공용 ── */
+.rich-view {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  word-break: keep-all;
+}
+.rich-view p {
+  margin: 0 0 4px;
+  min-height: 1.2em; /* 빈 줄(<p><br>) 유지 */
+}
+.rich-view h2 {
+  margin: 20px 0 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.rich-view h2:first-child {
+  margin-top: 0;
+}
+.rich-view b,
+.rich-view strong {
+  color: var(--text-primary);
+}
+.rich-view img {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 10px 0;
+}
+.rich-view hr {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: 18px 0;
+}
+
+/* 홈 상세(/moim)에서는 글에 여백, 이미지는 풀블리드 */
+.moim-view .rich-view {
+  padding: 14px var(--page-px) 20px;
+}
+.moim-view .rich-view img {
+  width: calc(100% + var(--page-px) * 2);
+  margin-left: calc(var(--page-px) * -1);
+}
 .moim-apply {
   display: flex;
   justify-content: center; /* 중앙 정렬 */
@@ -3463,6 +3509,59 @@ select.auth-input {
   width: 100%;
   border-radius: var(--radius-md);
   display: block;
+}
+
+/* 게시판식 WYSIWYG 에디터 */
+.wys-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--adm-border);
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 5;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+.wys-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.wys-btn:hover {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+.wys-color {
+  font-size: 14px;
+  font-weight: 800;
+}
+.wys-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--adm-border);
+  margin: 0 4px;
+}
+.wys-editor {
+  min-height: 440px;
+  padding: 20px 22px;
+  outline: none;
+  cursor: text;
+}
+.wys-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.wys-editor img {
+  max-width: 100%;
 }
 
 /* 상세 페이지 블록 에디터 */
