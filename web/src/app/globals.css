@@ -2256,6 +2256,50 @@ body.with-bottom-nav .app-main {
   font-weight: 700;
 }
 
+/* ============================================================
+   가입/폼 필드 — 라벨 + 행 구성
+   ============================================================ */
+.fld {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fld-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.fld-row {
+  display: flex;
+  gap: 10px;
+}
+.fld-full {
+  width: 100%;
+  min-width: 0;
+}
+.fld-gender {
+  width: 112px;
+  flex-shrink: 0;
+}
+.fld-email {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.fld-email-id {
+  flex: 1;
+  min-width: 0;
+}
+.fld-at {
+  color: var(--text-tertiary);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.fld-email-domain {
+  width: 138px;
+  flex-shrink: 0;
+}
+
 /* ---- Sheet / Modal ---- */
 .sheet-backdrop {
   position: fixed;
