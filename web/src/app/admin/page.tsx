@@ -326,23 +326,29 @@ export default function AdminPage() {
                         </p>
                       </div>
                       <div className="admin-item-foot">
-                        <Link href={`/admin/template/${t.id}`} className="admin-btn admin-btn-primary admin-btn-sm" style={{ flex: 1 }}>
-                          <CalendarClock size={15} /> 일정관리
-                        </Link>
-                        {t.home_section && (
-                          <Link href={`/admin/template/${t.id}/detail`} className="admin-btn admin-btn-ghost admin-btn-sm" title="홈 상세페이지 편집">
-                            <Pencil size={15} /> 홈 상세
+                        {/* 1줄: 주요 동작 */}
+                        <div className="admin-item-actions">
+                          <Link href={`/admin/template/${t.id}`} className="admin-btn admin-btn-primary admin-btn-sm" style={{ flex: 1 }}>
+                            <CalendarClock size={15} /> 일정관리
                           </Link>
-                        )}
-                        <button className="admin-btn admin-btn-ghost admin-btn-sm admin-btn-icon" title="수정" onClick={() => openTemplateEdit(t)}>
-                          <Pencil size={15} />
-                        </button>
-                        <button className="admin-btn admin-btn-ghost admin-btn-sm admin-btn-icon" title="복제" onClick={() => duplicateTemplate(t.id)}>
-                          <Copy size={15} />
-                        </button>
-                        <button className="admin-btn admin-btn-danger admin-btn-sm admin-btn-icon" title="삭제" onClick={() => deleteTemplate(t.id)}>
-                          <Trash2 size={15} />
-                        </button>
+                          {t.home_section && (
+                            <Link href={`/admin/template/${t.id}/detail`} className="admin-btn admin-btn-ghost admin-btn-sm" style={{ flex: 1 }} title="홈 상세페이지 편집">
+                              <Pencil size={15} /> 홈 상세
+                            </Link>
+                          )}
+                        </div>
+                        {/* 2줄: 관리 도구 */}
+                        <div className="admin-item-tools">
+                          <button className="admin-btn admin-btn-ghost admin-btn-sm" onClick={() => openTemplateEdit(t)}>
+                            <Pencil size={14} /> 수정
+                          </button>
+                          <button className="admin-btn admin-btn-ghost admin-btn-sm" onClick={() => duplicateTemplate(t.id)}>
+                            <Copy size={14} /> 복제
+                          </button>
+                          <button className="admin-btn admin-btn-danger admin-btn-sm" onClick={() => deleteTemplate(t.id)}>
+                            <Trash2 size={14} /> 삭제
+                          </button>
+                        </div>
                       </div>
                     </article>
                   ))}

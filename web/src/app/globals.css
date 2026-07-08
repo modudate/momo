@@ -588,8 +588,20 @@ body {
 }
 .admin-item-foot {
   display: flex;
+  flex-direction: column; /* 2줄 배치 — 버튼 숨막힘 해소 */
   gap: 8px;
   padding: 0 16px 16px;
+}
+.admin-item-actions {
+  display: flex;
+  gap: 8px;
+}
+.admin-item-tools {
+  display: flex;
+  gap: 6px;
+}
+.admin-item-tools .admin-btn {
+  flex: 1;
 }
 
 /* ---- 테이블 ---- */
