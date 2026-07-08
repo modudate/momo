@@ -232,7 +232,7 @@ export default function TemplateSchedulePage() {
       <div className="admin-main">
         <header className="admin-top">
           <div>
-            <Link href="/admin" className="inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--text-tertiary)] mb-1">
+            <Link href="/admin?tab=templates" className="inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--text-tertiary)] mb-1">
               <ArrowLeft size={14} /> 상품 목록
             </Link>
             <h1 className="admin-top-title">{template?.title ?? "상품"} · 일정관리</h1>

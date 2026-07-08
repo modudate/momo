@@ -35,7 +35,7 @@ export default function TemplateDetailEditorPage() {
         <header className="admin-top">
           <div>
             <Link
-              href="/admin"
+              href="/admin?tab=templates"
               className="inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--text-tertiary)] mb-1"
             >
               <ArrowLeft size={14} /> 상품 목록

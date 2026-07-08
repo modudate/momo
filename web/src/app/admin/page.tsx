@@ -99,7 +99,23 @@ const TAB_META: Record<AdminTab, { title: string; sub: string }> = {
 export default function AdminPage() {
   const router = useRouter();
   const [authState, setAuthState] = useState<"checking" | "ok" | "denied">("checking");
-  const [tab, setTab] = useState<AdminTab>("dashboard");
+  const [tab, setTabState] = useState<AdminTab>("dashboard");
+
+  // 탭을 URL(?tab=)에 동기화 — 상세 페이지 갔다가 뒤로가기 해도 보던 탭으로 복원
+  useEffect(() => {
+    const readTab = () => {
+      const t = new URLSearchParams(window.location.search).get("tab");
+      setTabState(t && TAB_META[t as AdminTab] ? (t as AdminTab) : "dashboard");
+    };
+    readTab();
+    window.addEventListener("popstate", readTab);
+    return () => window.removeEventListener("popstate", readTab);
+  }, []);
+
+  const setTab = (t: AdminTab) => {
+    setTabState(t);
+    window.history.replaceState(window.history.state, "", t === "dashboard" ? "/admin" : `/admin?tab=${t}`);
+  };
   const [toast, setToast] = useState("");
   const [sideCollapsed, setSideCollapsed] = useState(false); // 사이드바 접기
 
