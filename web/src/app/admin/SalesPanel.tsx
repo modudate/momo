@@ -28,6 +28,7 @@ type SalesRow = {
   meeting_id: string;
   meeting_title: string;
   meeting_date: string | null;
+  meeting_time: string | null;
   region_slug: string | null;
   region_name: string;
   member_name: string | null;
@@ -62,6 +63,22 @@ const statusLabel: Record<string, string> = {
 };
 const genderLabel = (g: string | null) =>
   g === "male" ? "남" : g === "female" ? "여" : g === "any" ? "공용" : "-";
+
+const DOW_KR = ["일", "월", "화", "수", "목", "금", "토"];
+// "2026-06-30" + "19:50" → "2026-06-30(화) 오후 7시50분"
+function formatSchedule(date: string | null, time: string | null) {
+  if (!date) return "-";
+  const [y, m, d] = date.split("-").map(Number);
+  const dow = DOW_KR[new Date(y, m - 1, d).getDay()];
+  let t = "";
+  if (time) {
+    const [hh, mm] = time.split(":").map(Number);
+    const ampm = hh < 12 ? "오전" : "오후";
+    const h12 = hh % 12 === 0 ? 12 : hh % 12;
+    t = ` ${ampm} ${h12}시${mm ? `${mm}분` : ""}`;
+  }
+  return `${date}(${dow})${t}`;
+}
 
 const formatMan = (v: number) => {
   if (v === 0) return "0";
@@ -282,14 +299,14 @@ export default function SalesPanel({ flash }: { flash: (m: string) => void }) {
                 <thead>
                   <tr>
                     <th>상태</th>
-                    <th>행사일</th>
-                    <th>모임</th>
-                    <th>지점</th>
-                    <th>신청자</th>
+                    <th>구매일시</th>
+                    <th>신청한 모임일정</th>
+                    <th>신청한 모임지점</th>
+                    <th>성별</th>
+                    <th>닉네임</th>
+                    <th>신청자이름</th>
                     <th>전화번호</th>
-                    <th>옵션</th>
                     <th>금액</th>
-                    <th>참석</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -302,9 +319,14 @@ export default function SalesPanel({ flash }: { flash: (m: string) => void }) {
                     rows.map((r) => (
                       <tr key={r.id} className="sales-row" onClick={() => setDetail(r)}>
                         <td><span className={`admin-badge admin-badge-${r.status}`}>{statusLabel[r.status] ?? r.status}</span></td>
-                        <td>{r.meeting_date ?? "-"}</td>
-                        <td className="font-semibold text-[var(--text-primary)]">{r.meeting_title}</td>
-                        <td>{r.region_name}</td>
+                        <td>{r.created_at.slice(0, 10)}</td>
+                        <td>{formatSchedule(r.meeting_date, r.meeting_time)}</td>
+                        <td className="font-semibold text-[var(--text-primary)]">
+                          [{r.region_name}] {r.meeting_title}
+                          {r.option_label && <span className="res-opt-badge" style={{ marginLeft: 6 }}>{r.option_label}</span>}
+                        </td>
+                        <td>{genderLabel(r.gender)}</td>
+                        <td>{r.member_name ?? "-"}</td>
                         <td>
                           {r.blacklisted && (
                             <span className="res-black" title="블랙리스트 일치">
@@ -322,13 +344,11 @@ export default function SalesPanel({ flash }: { flash: (m: string) => void }) {
                             "-"
                           )}
                         </td>
-                        <td>{r.option_label ? `${r.option_label} (${genderLabel(r.gender)})` : "단일가"}</td>
                         <td className="font-semibold">{formatKRW(r.amount)}</td>
-                        <td>{r.attended ? "✅" : "-"}</td>
                         <td onClick={(e) => e.stopPropagation()}>
                           {r.status !== "cancelled" && (
                             <button className="admin-btn admin-btn-danger admin-btn-sm" onClick={() => cancelOrder(r.id)}>
-                              취소
+                              결제취소
                             </button>
                           )}
                         </td>

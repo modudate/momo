@@ -18,6 +18,7 @@ type DbOrder = {
   meetings: {
     title: string;
     date: string;
+    time: string;
     region_slug: string;
     regions: { name: string } | null;
   } | null;
@@ -57,7 +58,7 @@ export async function GET(req: Request) {
   const { data: ordersRaw } = await admin
     .from("orders")
     .select(
-      "id,amount,status,gender,option_label,attended,buyer_name,buyer_phone,user_id,meeting_id,created_at,meetings(title,date,region_slug,regions(name))",
+      "id,amount,status,gender,option_label,attended,buyer_name,buyer_phone,user_id,meeting_id,created_at,meetings(title,date,time,region_slug,regions(name))",
     )
     .order("created_at", { ascending: false })
     .returns<DbOrder[]>();
@@ -91,6 +92,7 @@ export async function GET(req: Request) {
       meeting_id: o.meeting_id,
       meeting_title: o.meetings?.title ?? "모임",
       meeting_date: o.meetings?.date ?? null,
+      meeting_time: o.meetings?.time ?? null,
       region_slug: o.meetings?.region_slug ?? null,
       region_name: o.meetings?.regions?.name ?? o.meetings?.region_slug ?? "-",
       member_name: p?.name ?? null,
