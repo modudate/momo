@@ -3,6 +3,7 @@ import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://joinmomo.co.kr"),
   title: "모두의 모임",
   description: "강남·홍대·수원에서 열리는 오프라인 모임, 모두의 모임",
   manifest: "/manifest.webmanifest",
@@ -14,6 +15,21 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icon-192.png",
     apple: "/apple-touch-icon.png",
+  },
+  // 카톡/SNS 공유 미리보기
+  openGraph: {
+    title: "모두의 모임",
+    description: "강남·홍대·수원에서 열리는 오프라인 모임, 모두의 모임",
+    siteName: "모두의 모임",
+    type: "website",
+    locale: "ko_KR",
+    images: [{ url: "/og_image.png", width: 1200, height: 630, alt: "모두의 모임" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "모두의 모임",
+    description: "강남·홍대·수원에서 열리는 오프라인 모임, 모두의 모임",
+    images: ["/og_image.png"],
   },
 };
 
