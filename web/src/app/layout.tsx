@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     siteName: "모두의 모임",
     type: "website",
     locale: "ko_KR",
-    images: [{ url: "/og_image.png", width: 1200, height: 630, alt: "모두의 모임" }],
+    images: [{ url: "/og_image.png", width: 1731, height: 909, alt: "모두의 모임" }],
   },
   twitter: {
     card: "summary_large_image",
