@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { categoryLabel } from "@/data/taxonomy";
 import { formatKRW } from "@/data/moim-data";
-import DetailEditor from "./DetailEditor";
 
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
 const GENDERS = [
@@ -478,10 +477,6 @@ export default function TemplateSchedulePage() {
             </div>
           </div>
 
-          {/* 상세 페이지 에디터 (텍스트/이미지 블록) */}
-          <div style={{ marginTop: 20 }}>
-            <DetailEditor templateId={id} flash={flash} />
-          </div>
         </div>
       </div>
 

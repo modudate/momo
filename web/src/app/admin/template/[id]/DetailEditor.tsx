@@ -53,19 +53,25 @@ export default function DetailEditor({
 
   const addText = () => mutate([...blocks, { type: "text", text: "" }]);
 
-  const addImage = async (file: File) => {
+  // 여러 장 한 번에 — 선택한 순서대로 차례로 업로드해 블록 추가
+  const addImages = async (files: File[]) => {
+    if (files.length === 0) return;
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("folder", "detail");
-      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      if (res.ok) {
-        const data = (await res.json()) as { url: string };
-        mutate([...blocks, { type: "image", url: data.url }]);
-      } else {
-        flash("이미지 업로드에 실패했어요.");
+      const added: Block[] = [];
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("folder", "detail");
+        const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+        if (res.ok) {
+          const data = (await res.json()) as { url: string };
+          added.push({ type: "image", url: data.url });
+        } else {
+          flash(`${file.name} 업로드에 실패했어요.`);
+        }
       }
+      if (added.length > 0) mutate([...blocks, ...added]);
     } finally {
       setUploading(false);
     }
@@ -96,15 +102,16 @@ export default function DetailEditor({
             <Plus size={14} /> 텍스트
           </button>
           <label className="admin-btn admin-btn-ghost admin-btn-sm" style={{ cursor: "pointer" }}>
-            <ImagePlus size={14} /> {uploading ? "업로드 중…" : "이미지"}
+            <ImagePlus size={14} /> {uploading ? "업로드 중…" : "이미지 (여러 장 가능)"}
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
               style={{ display: "none" }}
               disabled={uploading}
               onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) addImage(f);
+                const files = Array.from(e.target.files ?? []);
+                if (files.length > 0) addImages(files);
                 e.target.value = "";
               }}
             />
@@ -125,7 +132,7 @@ export default function DetailEditor({
         <div className="admin-empty">
           <b>텍스트</b> / <b>이미지</b> 버튼으로 블록을 추가해 상세 페이지를 만들어 보세요.
           <br />
-          고객 상세페이지의 &lsquo;모임 소개&rsquo; 영역에 그대로 노출됩니다.
+          이미지는 여러 장을 한 번에(순서대로) 올릴 수 있고, 상세페이지에서 폭 100%로 노출됩니다.
         </div>
       ) : (
         <div className="detail-editor">

@@ -329,6 +329,11 @@ export default function AdminPage() {
                         <Link href={`/admin/template/${t.id}`} className="admin-btn admin-btn-primary admin-btn-sm" style={{ flex: 1 }}>
                           <CalendarClock size={15} /> 일정관리
                         </Link>
+                        {t.home_section && (
+                          <Link href={`/admin/template/${t.id}/detail`} className="admin-btn admin-btn-ghost admin-btn-sm" title="홈 상세페이지 편집">
+                            <Pencil size={15} /> 홈 상세
+                          </Link>
+                        )}
                         <button className="admin-btn admin-btn-ghost admin-btn-sm admin-btn-icon" title="수정" onClick={() => openTemplateEdit(t)}>
                           <Pencil size={15} />
                         </button>

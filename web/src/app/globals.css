@@ -2373,6 +2373,51 @@ select.auth-input {
   padding-right: 36px;
 }
 
+/* ============================================================
+   홈 노출 모임 전용 상세페이지 (/moim/[id])
+   ============================================================ */
+.moim-view {
+  display: flex;
+  flex-direction: column;
+}
+.moim-view-img {
+  width: 100%; /* 이미지 폭 100% (풀블리드) */
+  height: auto;
+  display: block;
+}
+.moim-view-text {
+  padding: 18px var(--page-px);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  white-space: pre-line;
+  word-break: keep-all;
+}
+.moim-apply {
+  display: flex;
+  justify-content: center; /* 중앙 정렬 */
+  gap: 10px;
+  padding: 28px var(--page-px) 8px;
+}
+.moim-apply-btn {
+  flex: 1;
+  max-width: 132px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--accent-primary);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.08s;
+}
+.moim-apply-btn:active {
+  transform: scale(0.97);
+}
+
 /* ---- Sheet / Modal ---- */
 .sheet-backdrop {
   position: fixed;

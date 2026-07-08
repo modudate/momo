@@ -31,7 +31,7 @@ function mapCard(t: DbTpl, section: "signature" | "premium") {
       .map((s) => s.trim())
       .filter((s) => s && s !== "all" && s !== "전연령"),
     image: t.image,
-    href: `/region/${t.region_slug}`,
+    href: `/moim/${t.id}`, // 홈 노출 모임 전용 상세페이지
   };
 }
 
