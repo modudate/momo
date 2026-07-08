@@ -44,8 +44,10 @@ export async function GET(req: Request) {
     });
     if (res.ok) {
       const list = (await res.json()) as NagerHoliday[];
+      // 데이터 소스가 공휴일 아닌 기념일을 포함하는 경우 제외 (제헌절은 2008년부터 공휴일 아님)
+      const NOT_HOLIDAY = new Set(["제헌절", "노동절"]);
       list.forEach((h) => {
-        if (h.date && h.localName) holidays[h.date] = h.localName;
+        if (h.date && h.localName && !NOT_HOLIDAY.has(h.localName)) holidays[h.date] = h.localName;
       });
     }
   } catch {
