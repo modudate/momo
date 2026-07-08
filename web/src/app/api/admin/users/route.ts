@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdminAllowed } from "@/lib/admin";
 import { getAdminClient } from "@/lib/supabase/admin";
-import { getBlacklistSet, normPhone } from "@/lib/blacklist";
+import { getBlacklistMap, normPhone } from "@/lib/blacklist";
 
 type DbMember = {
   id: string;
@@ -48,8 +48,8 @@ export async function GET() {
     stat.set(o.user_id, s);
   });
 
-  // 4) 블랙리스트 대조
-  const black = await getBlacklistSet();
+  // 4) 블랙리스트 대조 (메모 포함)
+  const black = await getBlacklistMap();
 
   const rows = users.map((u) => {
     const phone = u.phone ?? null;
@@ -66,6 +66,7 @@ export async function GET() {
       attended: s.attended,
       cancelled: s.cancelled,
       blacklisted: phone ? black.has(normPhone(phone)) : false,
+      black_memo: phone ? black.get(normPhone(phone)) ?? null : null,
     };
   });
 

@@ -110,10 +110,13 @@ export async function GET(req: Request) {
   if (from) rows = rows.filter((r) => r.meeting_date && r.meeting_date >= from);
   if (to) rows = rows.filter((r) => r.meeting_date && r.meeting_date <= to);
   if (q) {
-    rows = rows.filter((r) =>
-      [r.id, r.name, r.member_name, r.phone, r.meeting_title]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(q)),
+    const qDigits = q.replace(/\D/g, "");
+    rows = rows.filter(
+      (r) =>
+        [r.id, r.name, r.member_name, r.meeting_title]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q)) ||
+        (qDigits.length >= 3 && (r.phone ?? "").replace(/\D/g, "").includes(qDigits)),
     );
   }
 

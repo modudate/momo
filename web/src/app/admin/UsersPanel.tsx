@@ -16,6 +16,7 @@ type Member = {
   attended: number;
   cancelled: number;
   blacklisted: boolean;
+  black_memo: string | null;
 };
 
 const genderLabel = (g: string | null) => (g === "male" ? "남" : g === "female" ? "여" : "-");
@@ -42,17 +43,22 @@ export default function UsersPanel({ flash }: { flash: (m: string) => void }) {
   const filtered = useMemo(() => {
     const k = q.trim().toLowerCase();
     if (!k) return members;
-    return members.filter((m) =>
-      [m.name, m.email, m.phone].filter(Boolean).some((v) => String(v).toLowerCase().includes(k)),
+    const kDigits = k.replace(/\D/g, "");
+    return members.filter(
+      (m) =>
+        [m.name, m.email].filter(Boolean).some((v) => String(v).toLowerCase().includes(k)) ||
+        (kDigits.length >= 3 && (m.phone ?? "").replace(/\D/g, "").includes(kDigits)),
     );
   }, [members, q]);
 
   const addBlack = async (m: Member) => {
     if (!m.phone) return;
+    const memo = window.prompt(`${m.name ?? "회원"} 님을 블랙리스트에 등록합니다.\n사유(메모)를 입력하세요:`, "");
+    if (memo === null) return; // 취소
     const res = await fetch("/api/admin/blacklist", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: m.name, phone: m.phone, memo: "회원목록에서 등록" }),
+      body: JSON.stringify({ name: m.name, phone: m.phone, memo }),
     });
     if (res.ok) {
       flash("블랙리스트에 등록했어요.");
@@ -98,26 +104,29 @@ export default function UsersPanel({ flash }: { flash: (m: string) => void }) {
               <table className="admin-table">
                 <thead>
                   <tr>
+                    <th>가입일</th>
+                    <th>성별</th>
                     <th>회원명</th>
                     <th>이메일</th>
                     <th>전화번호</th>
-                    <th>출생</th>
-                    <th>성별</th>
+                    <th>출생년도</th>
                     <th>신청</th>
                     <th>참석</th>
                     <th>취소</th>
-                    <th>가입일</th>
+                    <th>메모</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={10}><div className="admin-empty">불러오는 중…</div></td></tr>
+                    <tr><td colSpan={11}><div className="admin-empty">불러오는 중…</div></td></tr>
                   ) : filtered.length === 0 ? (
-                    <tr><td colSpan={10}><div className="admin-empty">회원이 없어요.</div></td></tr>
+                    <tr><td colSpan={11}><div className="admin-empty">회원이 없어요.</div></td></tr>
                   ) : (
                     filtered.map((m) => (
                       <tr key={m.id}>
+                        <td>{m.created_at?.slice(0, 10) ?? "-"}</td>
+                        <td>{genderLabel(m.gender)}</td>
                         <td className="font-semibold text-[var(--text-primary)]">
                           {m.blacklisted && (
                             <span className="res-black" title="블랙리스트">
@@ -129,11 +138,10 @@ export default function UsersPanel({ flash }: { flash: (m: string) => void }) {
                         <td>{m.email ?? "-"}</td>
                         <td>{m.phone ?? "-"}</td>
                         <td>{m.birth_year ?? "-"}</td>
-                        <td>{genderLabel(m.gender)}</td>
                         <td>{m.applied}</td>
                         <td>{m.attended}</td>
                         <td>{m.cancelled}</td>
-                        <td>{m.created_at?.slice(0, 10) ?? "-"}</td>
+                        <td className="users-memo" title={m.black_memo ?? undefined}>{m.black_memo ?? "-"}</td>
                         <td>
                           <div className="flex justify-end">
                             {m.blacklisted ? (

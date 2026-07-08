@@ -339,6 +339,7 @@ body {
 /* ---- 사이드바 (다크) ---- */
 .admin-side {
   width: 244px;
+  transition: width 0.15s ease;
   flex-shrink: 0;
   background: var(--adm-side);
   color: var(--adm-side-text);
@@ -373,6 +374,46 @@ body {
   height: 18px;
   width: auto;
   display: block;
+}
+.admin-side-toggle {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--adm-side-text);
+  cursor: pointer;
+}
+.admin-side-toggle:hover {
+  background: var(--adm-side-hover);
+  color: #fff;
+}
+.admin-side.is-collapsed {
+  width: 64px;
+}
+.admin-side.is-collapsed .admin-side-brand {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+.admin-side.is-collapsed .admin-side-toggle {
+  margin-left: 0;
+}
+.admin-side.is-collapsed .admin-side-link {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.users-memo {
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .admin-side-nav {
   display: flex;
@@ -2490,59 +2531,73 @@ select.auth-input {
   overflow: hidden;
 }
 
-/* 일정 칩 */
+/* 일정 칩 — 진행예정(연회색) / 당일(하늘색) / 마감(회색·흐림) */
 .res-chip {
-  display: grid;
-  grid-template-columns: auto auto auto;
-  grid-auto-rows: min-content;
-  gap: 2px 5px;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
   text-align: left;
-  padding: 4px 6px;
-  border: 1px solid var(--adm-border);
-  border-left: 3px solid var(--accent-primary);
-  border-radius: 7px;
-  background: #fcfcfd;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 8px;
+  background: #f1f3f5;
   cursor: pointer;
-  transition: background 0.12s, transform 0.06s;
+  transition: filter 0.12s, transform 0.06s;
   width: 100%;
 }
 .res-chip:hover {
-  background: #f1f3f5;
+  filter: brightness(0.96);
 }
 .res-chip:active {
   transform: scale(0.98);
 }
-.res-chip-state {
-  grid-column: 1;
-  font-size: 10px;
-  font-weight: 800;
-  color: #12b886;
-}
-.res-chip-state.is-full {
-  color: #e5484d;
-}
-.res-chip-time {
-  grid-column: 2;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-secondary);
-}
-.res-chip-count {
-  grid-column: 3;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-tertiary);
-  justify-self: end;
-}
-.res-chip-title {
-  grid-column: 1 / -1;
+.res-chip-name {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 800;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
+}
+.res-chip-time {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.res-chip-status {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #0ca678;
+}
+/* 당일 — 하늘색 강조 */
+.res-chip.is-today {
+  background: #cfe8ff;
+}
+.res-chip.is-today .res-chip-name,
+.res-chip.is-today .res-chip-time {
+  color: #0b5cad;
+}
+.res-chip.is-today .res-chip-status {
+  color: #0b5cad;
+}
+/* 마감 — 회색 + 흐림 */
+.res-chip.is-closed {
+  background: #ececec;
+}
+.res-chip.is-closed .res-chip-name,
+.res-chip.is-closed .res-chip-time,
+.res-chip.is-closed .res-chip-status {
+  color: #9aa0a6;
+}
+
+/* 다음 달 이어보기 셀 */
+.res-cell-other {
+  background: #fcfcfd;
+}
+.res-cell-other .res-cell-num {
+  opacity: 0.45;
 }
 
 /* 우측 요약 */

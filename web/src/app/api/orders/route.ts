@@ -136,7 +136,7 @@ export async function POST(req: Request) {
     option_label: row.option_label,
     gender: row.gender,
     name: tickets[i].name!.trim(),
-    phone: tickets[i].phone!.trim(),
+    phone: tickets[i].phone!.replace(/\D/g, ""), // 숫자만 저장
     birth_year: tickets[i].birthYear ?? null,
   }));
 

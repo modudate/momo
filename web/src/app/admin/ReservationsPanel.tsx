@@ -17,6 +17,7 @@ import {
   Ban,
   Lock,
   LockOpen,
+  Copy as CopyIcon,
 } from "lucide-react";
 import { toPng } from "html-to-image";
 import { regions, formatKRW } from "@/data/moim-data";
@@ -134,20 +135,21 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
   const [saving, setSaving] = useState(false);
 
   const monthKey = `${year}-${pad(month)}`;
+  const nextMonthKey =
+    month === 12 ? `${year + 1}-01` : `${year}-${pad(month + 1)}`;
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(
-      `/api/admin/reservations?month=${monthKey}&region=${region}`,
-    );
-    if (res.ok) {
-      const data = (await res.json()) as { meetings: ResMeeting[] };
-      setMeetings(data.meetings);
-    } else {
-      setMeetings([]);
-    }
+    // 이번 달 + 다음 달 함께 로드 → 월말 주 이어보기 & 일정이동 대상에 다음 달 포함
+    const [r1, r2] = await Promise.all([
+      fetch(`/api/admin/reservations?month=${monthKey}&region=${region}`),
+      fetch(`/api/admin/reservations?month=${nextMonthKey}&region=${region}`),
+    ]);
+    const d1 = r1.ok ? ((await r1.json()) as { meetings: ResMeeting[] }).meetings : [];
+    const d2 = r2.ok ? ((await r2.json()) as { meetings: ResMeeting[] }).meetings : [];
+    setMeetings([...d1, ...d2]);
     setLoading(false);
-  }, [monthKey, region]);
+  }, [monthKey, nextMonthKey, region]);
 
   useEffect(() => {
     load();
@@ -187,22 +189,31 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
       list.push(m);
       byDate.set(m.date, list);
     });
-    const cells: { date: string | null; items: ResMeeting[] }[] = [];
+    const cells: { date: string | null; items: ResMeeting[]; other?: boolean }[] = [];
     for (let i = 0; i < firstDow; i++) cells.push({ date: null, items: [] });
     for (let d = 1; d <= daysInMonth; d++) {
       const ds = `${year}-${pad(month)}-${pad(d)}`;
       cells.push({ date: ds, items: byDate.get(ds) ?? [] });
     }
-    while (cells.length % 7 !== 0) cells.push({ date: null, items: [] });
+    // 마지막 주는 다음 달 첫 주 날짜로 이어서 표시
+    let nd = 1;
+    const ny = month === 12 ? year + 1 : year;
+    const nm = month === 12 ? 1 : month + 1;
+    while (cells.length % 7 !== 0) {
+      const ds = `${ny}-${pad(nm)}-${pad(nd)}`;
+      cells.push({ date: ds, items: byDate.get(ds) ?? [], other: true });
+      nd += 1;
+    }
     return cells;
   }, [year, month, meetings]);
 
   // 통계
   const monthStats = useMemo(() => {
-    const people = meetings.reduce((s, m) => s + m.joined, 0);
-    const revenue = meetings.reduce((s, m) => s + m.revenue, 0);
-    return { people, revenue, ops: meetings.length };
-  }, [meetings]);
+    const cur = meetings.filter((m) => m.date.startsWith(monthKey));
+    const people = cur.reduce((s, m) => s + m.joined, 0);
+    const revenue = cur.reduce((s, m) => s + m.revenue, 0);
+    return { people, revenue, ops: cur.length };
+  }, [meetings, monthKey]);
 
   const todayStats = useMemo(() => {
     const todays = meetings.filter((m) => m.date === today);
@@ -298,6 +309,17 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
       load();
     } else {
       flash("저장에 실패했어요.");
+    }
+  };
+
+  // 전화번호 복사
+  const copyPhone = async (phone: string | null) => {
+    if (!phone) return;
+    try {
+      await navigator.clipboard.writeText(phone);
+      flash(`전화번호 복사: ${phone}`);
+    } catch {
+      flash("복사에 실패했어요.");
     }
   };
 
@@ -480,7 +502,7 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
                 return (
                   <div
                     key={cell.date ?? `empty-${idx}`}
-                    className={`res-cell ${!cell.date ? "res-cell-empty" : ""} ${isToday ? "res-cell-today" : ""}`}
+                    className={`res-cell ${!cell.date ? "res-cell-empty" : ""} ${cell.other ? "res-cell-other" : ""} ${isToday ? "res-cell-today" : ""}`}
                   >
                     {cell.date && (
                       <>
@@ -498,23 +520,27 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
                           {cell.items.map((m) => {
                             const shown = m.joined + (m.virtual_male ?? 0) + (m.virtual_female ?? 0);
                             const full = shown >= m.capacity;
+                            const isTodayChip = m.date === today;
+                            const chipClass = full
+                              ? "res-chip is-closed"
+                              : isTodayChip
+                                ? "res-chip is-today"
+                                : "res-chip";
                             return (
                               <button
                                 key={m.id}
                                 type="button"
-                                className="res-chip"
-                                style={{ borderLeftColor: regionAccent(m.region_slug) }}
+                                className={chipClass}
                                 onClick={() => openAttendees(m)}
-                                title={`${m.title} · ${m.region_name}`}
+                                title={`${m.region_name} ${m.title} · ${m.time}`}
                               >
-                                <span className={`res-chip-state ${full ? "is-full" : ""}`}>
-                                  {full ? "마감" : "모집"}
+                                <span className="res-chip-name">
+                                  {m.region_name} {m.title}
                                 </span>
                                 <span className="res-chip-time">{m.time}</span>
-                                <span className="res-chip-count">
-                                  {shown}/{m.capacity}
+                                <span className="res-chip-status">
+                                  {full ? "마감" : "진행예정"} {shown}/{m.capacity}
                                 </span>
-                                <span className="res-chip-title">{m.title}</span>
                               </button>
                             );
                           })}
@@ -682,6 +708,7 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
                       rows={male}
                       onToggle={toggleAttended}
                       onMove={(a) => { setMoveFor(a); setMoveTarget(""); }}
+                      copyPhone={copyPhone}
                     />
                     <AttendList
                       title={`여 (${female.length})`}
@@ -689,6 +716,7 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
                       rows={female}
                       onToggle={toggleAttended}
                       onMove={(a) => { setMoveFor(a); setMoveTarget(""); }}
+                      copyPhone={copyPhone}
                     />
                     {others.length > 0 && (
                       <AttendList
@@ -697,6 +725,7 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
                         rows={others}
                         onToggle={toggleAttended}
                         onMove={(a) => { setMoveFor(a); setMoveTarget(""); }}
+                        copyPhone={copyPhone}
                         full
                       />
                     )}
@@ -904,6 +933,7 @@ function AttendList({
   rows,
   onToggle,
   onMove,
+  copyPhone,
   full,
 }: {
   title: string;
@@ -911,6 +941,7 @@ function AttendList({
   rows: Attendee[];
   onToggle: (orderId: string, next: boolean) => void;
   onMove: (a: Attendee) => void;
+  copyPhone: (phone: string | null) => void;
   full?: boolean;
 }) {
   return (
@@ -963,7 +994,20 @@ function AttendList({
                   )}
                   {a.name ?? "-"}
                 </td>
-                <td>{a.phone ?? "-"}</td>
+                <td>
+                  {a.phone ? (
+                    <button
+                      type="button"
+                      className="sales-phone"
+                      onClick={() => copyPhone(a.phone)}
+                      title="전화번호 복사"
+                    >
+                      {a.phone} <CopyIcon size={12} />
+                    </button>
+                  ) : (
+                    "-"
+                  )}
+                </td>
                 <td>{a.birth_year ?? "-"}</td>
                 <td>
                   <div className="res-bigo">

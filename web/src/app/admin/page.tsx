@@ -19,6 +19,8 @@ import {
   Users,
   ArrowUpRight,
   Send,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { regions, formatKRW } from "@/data/moim-data";
 import { CATEGORIES, categoryLabel, AGE_GROUP_PRESETS } from "@/data/taxonomy";
@@ -50,18 +52,6 @@ type Template = {
   image: string | null;
   home_section: string | null;
   home_badge: string | null;
-};
-
-type Order = {
-  id: string;
-  amount: number;
-  status: "pending" | "paid" | "cancelled" | "failed";
-  buyer_name: string | null;
-  buyer_phone: string | null;
-  created_at: string;
-  option_label: string | null;
-  gender: string | null;
-  meetings: { title: string; date: string } | null;
 };
 
 function genderLabel(gender: string | null) {
@@ -97,20 +87,13 @@ const NAV: { key: AdminTab; label: string; icon: typeof Package }[] = [
 ];
 
 const TAB_META: Record<AdminTab, { title: string; sub: string }> = {
-  dashboard: { title: "대시보드", sub: "한눈에 보는 현황" },
+  dashboard: { title: "판매 내역", sub: "주문 검색·필터·상세·CSV 내보내기" },
   reservations: { title: "예약 일정 관리", sub: "지점별·모임별 예약 현황 한눈에 · 일정 클릭 시 성별 명단" },
   templates: { title: "예약 상품", sub: "예약 상품(모임 프로그램) 관리 · 복제 · 일정 생성" },
-  sales: { title: "판매", sub: "매출 분석 + 주문 검색·필터·상세·CSV 내보내기" },
+  sales: { title: "매출 분석", sub: "일·주·월 매출 비교 대시보드" },
   users: { title: "유저 관리", sub: "회원 목록 + 블랙리스트 관리" },
   banner: { title: "홈 배너", sub: "메인 상단 슬라이드 이미지·문구 관리" },
   push: { title: "푸시 알림", sub: "전체 구독자에게 발송" },
-};
-
-const orderStatusLabel: Record<Order["status"], string> = {
-  paid: "결제완료",
-  pending: "결제대기",
-  cancelled: "취소됨",
-  failed: "실패",
 };
 
 export default function AdminPage() {
@@ -118,10 +101,10 @@ export default function AdminPage() {
   const [authState, setAuthState] = useState<"checking" | "ok" | "denied">("checking");
   const [tab, setTab] = useState<AdminTab>("dashboard");
   const [toast, setToast] = useState("");
+  const [sideCollapsed, setSideCollapsed] = useState(false); // 사이드바 접기
 
   const [stats, setStats] = useState<Stats>({ templates: 0, upcomingSessions: 0, orders: 0, subscribers: 0 });
   const [templates, setTemplates] = useState<Template[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
 
   const [templateModal, setTemplateModal] = useState<{ open: boolean; editId: string | null }>({
     open: false,
@@ -145,10 +128,6 @@ export default function AdminPage() {
     const res = await fetch("/api/admin/templates");
     if (res.ok) setTemplates((await res.json()).templates);
   }, []);
-  const loadOrders = useCallback(async () => {
-    const res = await fetch("/api/admin/orders");
-    if (res.ok) setOrders((await res.json()).orders);
-  }, []);
 
   useEffect(() => {
     (async () => {
@@ -161,9 +140,8 @@ export default function AdminPage() {
       setAuthState("ok");
       loadStats();
       loadTemplates();
-      loadOrders();
     })();
-  }, [loadStats, loadTemplates, loadOrders]);
+  }, [loadStats, loadTemplates]);
 
   // ---- 상품(템플릿) ----
   const openTemplateCreate = () => {
@@ -225,20 +203,6 @@ export default function AdminPage() {
     }
   };
 
-  // ---- 주문 ----
-  const cancelOrder = async (id: string) => {
-    if (!window.confirm("이 주문을 강제 취소할까요?")) return;
-    const res = await fetch("/api/admin/orders", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    if (res.ok) {
-      flash("취소했어요.");
-      loadOrders();
-    }
-  };
-
   // ---- 푸시 ----
   const sendBroadcast = async () => {
     const res = await fetch("/api/admin/push", {
@@ -280,17 +244,23 @@ export default function AdminPage() {
       </button>
     ) : null;
 
-  const sortedOrders = [...orders].sort((a, b) =>
-    (a.meetings?.date ?? "").localeCompare(b.meetings?.date ?? ""),
-  );
-
   return (
     <div className="admin-root">
       {/* 사이드바 */}
-      <aside className="admin-side">
+      <aside className={`admin-side ${sideCollapsed ? "is-collapsed" : ""}`}>
         <div className="admin-side-brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo_white.png" alt="모두의 모임" className="admin-side-brand-logo" />
+          {!sideCollapsed && (
+            <img src="/logo_white.png" alt="모두의 모임" className="admin-side-brand-logo" />
+          )}
+          <button
+            type="button"
+            className="admin-side-toggle"
+            title={sideCollapsed ? "사이드바 펼치기" : "사이드바 숨기기"}
+            onClick={() => setSideCollapsed((v) => !v)}
+          >
+            {sideCollapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+          </button>
         </div>
         <nav className="admin-side-nav">
           {NAV.map(({ key, label, icon: Icon }) => (
@@ -301,13 +271,13 @@ export default function AdminPage() {
               onClick={() => setTab(key)}
               className="admin-side-link"
             >
-              <Icon size={18} /> {label}
+              <Icon size={18} /> {!sideCollapsed && label}
             </button>
           ))}
         </nav>
         <div className="admin-side-foot">
           <Link href="/home" className="admin-side-link">
-            <ArrowUpRight size={18} /> 사이트로 이동
+            <ArrowUpRight size={18} /> {!sideCollapsed && "사이트로 이동"}
           </Link>
         </div>
       </aside>
@@ -323,27 +293,8 @@ export default function AdminPage() {
         </header>
 
         <div className="admin-wrap">
-          {/* 대시보드 */}
-          {tab === "dashboard" && (
-            <>
-              <div className="admin-stats">
-                <StatCard icon={<Package size={19} />} num={stats.templates} label="예약 상품" />
-                <StatCard icon={<CalendarClock size={19} />} num={stats.upcomingSessions} label="예정 일정" />
-                <StatCard icon={<Ticket size={19} />} num={stats.orders} label="총 주문" />
-                <StatCard icon={<Users size={19} />} num={stats.subscribers} label="알림 구독자" />
-              </div>
-
-              <div className="admin-card">
-                <div className="admin-card-head">
-                  <span className="admin-card-title">최근 주문</span>
-                  <button className="admin-btn admin-btn-ghost admin-btn-sm" onClick={() => setTab("sales")}>
-                    전체 보기
-                  </button>
-                </div>
-                <OrdersTable orders={sortedOrders.slice(0, 6)} onCancel={cancelOrder} compact />
-              </div>
-            </>
-          )}
+          {/* 대시보드 = 판매 내역 */}
+          {tab === "dashboard" && <SalesPanel flash={flash} mode="list" />}
 
           {/* 예약관리 */}
           {tab === "reservations" && <ReservationsPanel flash={flash} />}
@@ -396,7 +347,7 @@ export default function AdminPage() {
           )}
 
           {/* 판매 */}
-          {tab === "sales" && <SalesPanel flash={flash} />}
+          {tab === "sales" && <SalesPanel flash={flash} mode="analytics" />}
 
           {/* 유저 관리 */}
           {tab === "users" && <UsersPanel flash={flash} />}
@@ -456,80 +407,6 @@ export default function AdminPage() {
           {toast}
         </div>
       )}
-    </div>
-  );
-}
-
-function StatCard({ icon, num, label }: { icon: React.ReactNode; num: number; label: string }) {
-  return (
-    <div className="admin-stat">
-      <div className="admin-stat-icon">{icon}</div>
-      <div className="admin-stat-num">{num.toLocaleString()}</div>
-      <div className="admin-stat-label">{label}</div>
-    </div>
-  );
-}
-
-function OrdersTable({
-  orders,
-  onCancel,
-  compact,
-}: {
-  orders: Order[];
-  onCancel: (id: string) => void;
-  compact?: boolean;
-}) {
-  return (
-    <div className="admin-table-wrap">
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>상태</th>
-            <th>모임</th>
-            {!compact && <th>옵션</th>}
-            <th>일시</th>
-            <th>신청자</th>
-            {!compact && <th>연락처</th>}
-            <th>금액</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.length === 0 && (
-            <tr>
-              <td colSpan={compact ? 6 : 9}>
-                <div className="admin-empty">주문이 없어요.</div>
-              </td>
-            </tr>
-          )}
-          {orders.map((o) => (
-            <tr key={o.id}>
-              <td>
-                <span className={`admin-badge admin-badge-${o.status}`}>{orderStatusLabel[o.status]}</span>
-              </td>
-              <td className="font-semibold text-[var(--text-primary)]">{o.meetings?.title ?? "모임"}</td>
-              {!compact && (
-                <td>
-                  {o.option_label ? `${o.option_label} (${genderLabel(o.gender)})` : "-"}
-                </td>
-              )}
-              <td>{o.meetings?.date ?? "-"}</td>
-              <td>{o.buyer_name ?? "-"}</td>
-              {!compact && <td>{o.buyer_phone ?? "-"}</td>}
-              <td className="font-semibold">{formatKRW(o.amount)}</td>
-              <td>
-                {o.status !== "cancelled" && (
-                  <div className="flex justify-end">
-                    <button className="admin-btn admin-btn-danger admin-btn-sm" onClick={() => onCancel(o.id)}>
-                      강제취소
-                    </button>
-                  </div>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }

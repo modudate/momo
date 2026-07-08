@@ -98,9 +98,9 @@ function todayKST() {
   }).format(new Date());
 }
 
-export default function SalesPanel({ flash }: { flash: (m: string) => void }) {
+export default function SalesPanel({ flash, mode }: { flash: (m: string) => void; mode: "list" | "analytics" }) {
   const today = useMemo(() => todayKST(), []);
-  const [view, setView] = useState<"analytics" | "list">("analytics");
+  const view = mode; // 대시보드=판매 내역, 판매=매출 분석
 
   // 매출 분석
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
@@ -221,16 +221,6 @@ export default function SalesPanel({ flash }: { flash: (m: string) => void }) {
 
   return (
     <div>
-      {/* 세그먼트 */}
-      <div className="sales-seg">
-        <button data-active={view === "analytics"} onClick={() => setView("analytics")}>
-          매출 분석
-        </button>
-        <button data-active={view === "list"} onClick={() => setView("list")}>
-          판매 내역
-        </button>
-      </div>
-
       {view === "analytics" ? (
         anLoading || !analytics ? (
           <div className="admin-card">

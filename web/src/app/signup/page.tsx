@@ -145,9 +145,9 @@ export default function SignupPage() {
           <input
             type="tel"
             inputMode="tel"
-            placeholder="휴대폰 번호"
+            placeholder="01012345678 (숫자만)"
             value={phone}
-            onChange={(event) => setPhone(event.target.value)}
+            onChange={(event) => setPhone(event.target.value.replace(/\D/g, ""))}
             className="auth-input"
             required
           />

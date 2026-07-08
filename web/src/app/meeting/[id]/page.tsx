@@ -500,7 +500,11 @@ export default function MeetingDetailPage() {
                           placeholder="전화번호"
                           value={attendees[i]?.phone ?? ""}
                           onChange={(e) =>
-                            setAttendees((prev) => prev.map((a, idx) => (idx === i ? { ...a, phone: e.target.value } : a)))
+                            setAttendees((prev) =>
+                              prev.map((a, idx) =>
+                                idx === i ? { ...a, phone: e.target.value.replace(/\D/g, "") } : a,
+                              ),
+                            )
                           }
                         />
                         {!t.optionId && (

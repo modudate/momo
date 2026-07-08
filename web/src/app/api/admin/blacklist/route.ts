@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
   const { error } = await admin.from("blacklist").insert({
     name: body.name?.trim() || null,
-    phone: body.phone.trim(),
+    phone: body.phone.replace(/\D/g, ""), // 숫자만 저장
     memo: body.memo?.trim() || null,
   });
   if (error) {
