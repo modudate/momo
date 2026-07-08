@@ -231,7 +231,7 @@ export default function SalesPanel({ flash, mode }: { flash: (m: string) => void
         )
       ) : (
         <>
-          {/* 필터 바 */}
+          {/* 필터 바 — 한 줄 */}
           <div className="sales-filters">
             <div className="sales-search">
               <Search size={16} />
@@ -242,39 +242,31 @@ export default function SalesPanel({ flash, mode }: { flash: (m: string) => void
                 onChange={(e) => setQ(e.target.value)}
               />
             </div>
-
-            {/* 지점·상태·성별 — 한 줄 */}
-            <div className="sales-filter-row sales-filter-selects">
-              <select className="admin-select" value={region} onChange={(e) => setRegion(e.target.value)}>
-                <option value="all">전체 지점</option>
-                {regions.map((r) => (
-                  <option key={r.slug} value={r.slug}>{r.name}</option>
-                ))}
-              </select>
-              <select className="admin-select" value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="all">전체 상태</option>
-                <option value="paid">결제완료</option>
-                <option value="pending">결제대기</option>
-                <option value="cancelled">취소됨</option>
-                <option value="failed">실패</option>
-              </select>
-              <select className="admin-select" value={gender} onChange={(e) => setGender(e.target.value)}>
-                <option value="all">전체 성별</option>
-                <option value="male">남</option>
-                <option value="female">여</option>
-              </select>
-            </div>
-
-            {/* 기간 + 동작 */}
-            <div className="sales-filter-row">
-              <input type="date" className="admin-input sales-fdate" value={from} onChange={(e) => setFrom(e.target.value)} title="행사일 시작" />
-              <span className="sales-tilde">~</span>
-              <input type="date" className="admin-input sales-fdate" value={to} onChange={(e) => setTo(e.target.value)} title="행사일 끝" />
-              <button className="admin-btn admin-btn-ghost admin-btn-sm" onClick={resetFilters}>초기화</button>
-              <button className="admin-btn admin-btn-primary admin-btn-sm" onClick={exportCsv} disabled={rows.length === 0}>
-                <Download size={15} /> CSV
-              </button>
-            </div>
+            <select className="admin-select f-sel f-region" value={region} onChange={(e) => setRegion(e.target.value)}>
+              <option value="all">지점</option>
+              {regions.map((r) => (
+                <option key={r.slug} value={r.slug}>{r.name}</option>
+              ))}
+            </select>
+            <select className="admin-select f-sel f-status" value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="all">상태</option>
+              <option value="paid">결제완료</option>
+              <option value="pending">결제대기</option>
+              <option value="cancelled">취소됨</option>
+              <option value="failed">실패</option>
+            </select>
+            <select className="admin-select f-sel f-gender" value={gender} onChange={(e) => setGender(e.target.value)}>
+              <option value="all">성별</option>
+              <option value="male">남</option>
+              <option value="female">여</option>
+            </select>
+            <input type="date" className="admin-input sales-fdate" value={from} onChange={(e) => setFrom(e.target.value)} title="행사일 시작" />
+            <span className="sales-tilde">~</span>
+            <input type="date" className="admin-input sales-fdate" value={to} onChange={(e) => setTo(e.target.value)} title="행사일 끝" />
+            <button className="admin-btn admin-btn-ghost admin-btn-sm" onClick={resetFilters}>초기화</button>
+            <button className="admin-btn admin-btn-primary admin-btn-sm" onClick={exportCsv} disabled={rows.length === 0}>
+              <Download size={15} /> CSV
+            </button>
           </div>
 
           <div className="admin-card">

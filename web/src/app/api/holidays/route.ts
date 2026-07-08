@@ -44,8 +44,8 @@ export async function GET(req: Request) {
     });
     if (res.ok) {
       const list = (await res.json()) as NagerHoliday[];
-      // 데이터 소스가 공휴일 아닌 기념일을 포함하는 경우 제외 (제헌절은 2008년부터 공휴일 아님)
-      const NOT_HOLIDAY = new Set(["제헌절", "노동절"]);
+      // 노동절(근로자의 날)은 관공서 공휴일이 아니라 제외. 제헌절은 표기 유지(운영 방침).
+      const NOT_HOLIDAY = new Set(["노동절"]);
       list.forEach((h) => {
         if (h.date && h.localName && !NOT_HOLIDAY.has(h.localName)) holidays[h.date] = h.localName;
       });
