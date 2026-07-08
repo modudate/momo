@@ -1645,6 +1645,20 @@ body {
   background: #fff;
 }
 
+/* 지점 네이버지도 링크 */
+.region-map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #03c75a; /* 네이버 그린 */
+  text-decoration: none;
+}
+.region-map-link:active {
+  opacity: 0.7;
+}
+
 /* ============================================================
    날짜 스트립 (오늘부터 30일 · 지역 신청)
    ============================================================ */
