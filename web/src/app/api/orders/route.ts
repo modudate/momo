@@ -3,6 +3,7 @@ import { getAdminClient } from "@/lib/supabase/admin";
 import { getServerUser } from "@/lib/supabase/server";
 import { getMeetingLite, getMeetingOptions } from "@/lib/data";
 import { isBookingOpen } from "@/lib/booking";
+import { notifyAdmins } from "@/lib/notify";
 
 type Ticket = {
   optionId?: string;
@@ -155,6 +156,14 @@ export async function POST(req: Request) {
 
   const created = (data ?? []) as { id: string; group_id: string | null }[];
   const total = rows.reduce((s, r) => s + r.amount, 0);
+
+  // 관리자 알림 (실패해도 주문에 영향 없음)
+  const firstName = tickets[0]?.name ?? "신청자";
+  void notifyAdmins(
+    "🎉 새 신청 접수",
+    `${meeting.title} · ${rows.length}매 · ${firstName}${rows.length > 1 ? ` 외 ${rows.length - 1}명` : ""} · ${total.toLocaleString("ko-KR")}원`,
+  );
+
   return NextResponse.json({
     orderId: created[0]?.id,
     groupId: created[0]?.group_id,

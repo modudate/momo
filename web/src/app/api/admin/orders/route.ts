@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdminAllowed } from "@/lib/admin";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { notifyAdmins } from "@/lib/notify";
 
 // 주문 목록 조회 (관리자) — 모임 제목 포함
 export async function GET() {
@@ -48,9 +49,15 @@ export async function PATCH(req: Request) {
   // 결제완료 주문이면 정원 1 복구
   const { data: order } = await supabaseAdmin
     .from("orders")
-    .select("status,meeting_id")
+    .select("status,meeting_id,buyer_name,amount,meetings(title)")
     .eq("id", body.id)
-    .single<{ status: string; meeting_id: string }>();
+    .single<{
+      status: string;
+      meeting_id: string;
+      buyer_name: string | null;
+      amount: number;
+      meetings: { title: string } | null;
+    }>();
   if (!order) {
     return NextResponse.json({ error: "order_not_found" }, { status: 404 });
   }
@@ -76,6 +83,12 @@ export async function PATCH(req: Request) {
         .eq("id", order.meeting_id);
     }
   }
+
+  // 관리자 알림 (취소 발생)
+  void notifyAdmins(
+    "❌ 신청 취소",
+    `${order.meetings?.title ?? "모임"} · ${order.buyer_name ?? "신청자"} · ${order.amount.toLocaleString("ko-KR")}원`,
+  );
 
   return NextResponse.json({ ok: true });
 }

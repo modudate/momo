@@ -37,25 +37,22 @@ type SalesRow = {
   blacklisted: boolean;
 };
 
+type SeriesPoint = { key: string; label: string; revenue: number };
 type Analytics = {
   today: string;
-  kpi: {
-    revenue: number;
-    orders: number;
-    paid: number;
-    pending: number;
-    cancelled: number;
-    failed: number;
-    avgTicket: number;
+  cards: {
+    today: { revenue: number; changePct: number | null };
+    week: { revenue: number; changePct: number | null };
+    month: { revenue: number; changePct: number | null };
+    year: { revenue: number; label: string };
   };
-  thisMonth: { key: string; revenue: number };
-  lastMonth: { key: string; revenue: number };
-  momChangePct: number | null;
-  monthly: { month: string; revenue: number; count: number }[];
-  daily: { date: string; revenue: number; count: number }[];
+  kpi: { revenue: number; orders: number; paid: number; pending: number; avgTicket: number };
+  series: { daily: SeriesPoint[]; weekly: SeriesPoint[]; monthly: SeriesPoint[] };
+  avg12: number;
   byRegion: { name: string; revenue: number; count: number }[];
   byGender: { gender: string; revenue: number; count: number }[];
 };
+type Period = "daily" | "weekly" | "monthly";
 
 const statusLabel: Record<string, string> = {
   paid: "결제완료",
@@ -223,7 +220,7 @@ export default function SalesPanel({ flash }: { flash: (m: string) => void }) {
             <div className="admin-empty">매출 데이터를 불러오는 중…</div>
           </div>
         ) : (
-          <Analytics data={analytics} today={analytics.today} />
+          <Analytics data={analytics} />
         )
       ) : (
         <>
@@ -417,76 +414,67 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
 }
 
 /* ---------- 매출 분석 ---------- */
-function Analytics({ data, today }: { data: Analytics; today: string }) {
-  const mom = data.momChangePct;
-  const monthMax = Math.max(1, ...data.monthly.map((m) => m.revenue));
-  const dayMax = Math.max(1, ...data.daily.map((d) => d.revenue));
+function Analytics({ data }: { data: Analytics }) {
+  const [period, setPeriod] = useState<Period>("monthly");
+  const series = data.series[period];
+  const maxRev = Math.max(1, ...series.map((p) => p.revenue));
   const regionTotal = data.byRegion.reduce((s, r) => s + r.revenue, 0) || 1;
   const genderTotal = data.byGender.reduce((s, g) => s + g.revenue, 0) || 1;
 
+  const periodTitle =
+    period === "daily" ? "일별 (최근 30일)" : period === "weekly" ? "주별 (최근 12주)" : "월별 (최근 12개월)";
+
   return (
     <div className="sales-analytics">
-      {/* KPI */}
+      {/* 비교 카드: 오늘 / 이번 주 / 이번 달 / 연도 */}
+      <div className="cmp-grid">
+        <CmpCard label="오늘" value={data.cards.today.revenue} pct={data.cards.today.changePct} vs="어제 대비" />
+        <CmpCard label="이번 주" value={data.cards.week.revenue} pct={data.cards.week.changePct} vs="지난주 대비" />
+        <CmpCard label="이번 달" value={data.cards.month.revenue} pct={data.cards.month.changePct} vs="지난달 대비" />
+        <CmpCard label={data.cards.year.label} value={data.cards.year.revenue} pct={null} vs="" />
+      </div>
+
+      {/* 기간별 매출 */}
+      <div className="admin-card sales-chart-card">
+        <div className="admin-card-head">
+          <span className="admin-card-title">기간별 매출 · {periodTitle}</span>
+          <div className="sales-seg" style={{ marginBottom: 0 }}>
+            <button data-active={period === "daily"} onClick={() => setPeriod("daily")}>일별</button>
+            <button data-active={period === "weekly"} onClick={() => setPeriod("weekly")}>주별</button>
+            <button data-active={period === "monthly"} onClick={() => setPeriod("monthly")}>월별</button>
+          </div>
+        </div>
+        <div className={`bchart ${period === "daily" ? "bchart-daily" : ""}`}>
+          {series.map((p, i) => {
+            const isLast = i === series.length - 1;
+            const showLabel = period !== "daily" || i % 5 === 4 || isLast;
+            return (
+              <div className="bchart-col" key={p.key} title={`${p.key} · ${formatKRW(p.revenue)}`}>
+                {period !== "daily" && (
+                  <div className="bchart-val">{p.revenue ? formatMan(p.revenue) : ""}</div>
+                )}
+                <div className="bchart-track">
+                  <div
+                    className={`bchart-bar ${isLast ? "is-cur" : ""} ${p.revenue ? "" : "is-zero"}`}
+                    style={{ height: `${(p.revenue / maxRev) * 100}%` }}
+                  />
+                </div>
+                <div className={`bchart-label ${period === "daily" ? "bchart-label-day" : ""}`}>
+                  {showLabel ? p.label : ""}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <p className="avg12-note">직전 12개월 매출 평균 <b>{formatKRW(data.avg12)}</b></p>
+      </div>
+
+      {/* 요약 KPI */}
       <div className="sales-kpi">
         <KpiCard icon={<Wallet size={18} />} label="총 매출 (예상)" value={formatKRW(data.kpi.revenue)} />
         <KpiCard icon={<Ticket size={18} />} label="신청 건수" value={`${data.kpi.orders.toLocaleString()}건`} />
         <KpiCard icon={<CreditCard size={18} />} label="결제완료 / 대기" value={`${data.kpi.paid} / ${data.kpi.pending}`} />
         <KpiCard icon={<Users size={18} />} label="평균 객단가" value={formatKRW(data.kpi.avgTicket)} />
-        <KpiCard
-          icon={mom !== null && mom < 0 ? <TrendingDown size={18} /> : <TrendingUp size={18} />}
-          label="전월 대비"
-          value={mom === null ? "—" : `${mom > 0 ? "+" : ""}${mom}%`}
-          tone={mom === null ? undefined : mom < 0 ? "down" : "up"}
-        />
-      </div>
-
-      {/* 월별 매출 */}
-      <div className="admin-card sales-chart-card">
-        <div className="admin-card-head">
-          <span className="admin-card-title">월별 매출 (최근 6개월 · 행사일 기준)</span>
-        </div>
-        <div className="bchart">
-          {data.monthly.map((m) => {
-            const isCur = m.month === data.thisMonth.key;
-            return (
-              <div className="bchart-col" key={m.month} title={`${m.month} · ${formatKRW(m.revenue)} · ${m.count}건`}>
-                <div className="bchart-val">{m.revenue ? formatMan(m.revenue) : ""}</div>
-                <div className="bchart-track">
-                  <div
-                    className={`bchart-bar ${isCur ? "is-cur" : ""}`}
-                    style={{ height: `${(m.revenue / monthMax) * 100}%` }}
-                  />
-                </div>
-                <div className="bchart-label">{Number(m.month.slice(5, 7))}월</div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 일별 매출 (이번 달) */}
-      <div className="admin-card sales-chart-card">
-        <div className="admin-card-head">
-          <span className="admin-card-title">
-            일별 매출 ({Number(data.thisMonth.key.slice(5, 7))}월 · 행사일 기준)
-          </span>
-        </div>
-        <div className="bchart bchart-daily">
-          {data.daily.map((d) => {
-            const isToday = d.date === today;
-            return (
-              <div className="bchart-col" key={d.date} title={`${d.date} · ${formatKRW(d.revenue)} · ${d.count}건`}>
-                <div className="bchart-track">
-                  <div
-                    className={`bchart-bar ${isToday ? "is-today" : ""} ${d.revenue ? "" : "is-zero"}`}
-                    style={{ height: `${(d.revenue / dayMax) * 100}%` }}
-                  />
-                </div>
-                <div className="bchart-label bchart-label-day">{Number(d.date.slice(8, 10))}</div>
-              </div>
-            );
-          })}
-        </div>
       </div>
 
       <div className="sales-breakdowns">
@@ -534,6 +522,20 @@ function Analytics({ data, today }: { data: Analytics; today: string }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function CmpCard({ label, value, pct, vs }: { label: string; value: number; pct: number | null; vs: string }) {
+  return (
+    <div className="cmp-card">
+      <span className="cmp-label">{label}</span>
+      <span className="cmp-value">{value.toLocaleString("ko-KR")}원</span>
+      {vs && (
+        <span className={`cmp-pct ${pct === null ? "" : pct < 0 ? "down" : "up"}`}>
+          {vs} {pct === null ? "—" : `${pct > 0 ? "+" : ""}${pct}%`}
+        </span>
+      )}
     </div>
   );
 }
