@@ -22,6 +22,7 @@ import {
 import { toPng } from "html-to-image";
 import { regions, formatKRW } from "@/data/moim-data";
 import { useBackdropClose } from "@/lib/useBackdropClose";
+import { AdminDatePicker } from "./ui";
 
 type ResMeeting = {
   id: string;
@@ -779,12 +780,10 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
               <div className="admin-field-row">
                 <div className="admin-field">
                   <label className="admin-label">날짜</label>
-                  <input
-                    className="admin-input"
-                    type="date"
+                  <AdminDatePicker
                     value={mForm.date}
-                    onChange={(e) => setMForm({ ...mForm, date: e.target.value })}
-                    required
+                    onChange={(v) => setMForm({ ...mForm, date: v })}
+                    placeholder="날짜 선택"
                   />
                 </div>
                 <div className="admin-field">

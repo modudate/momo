@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { regions, formatKRW } from "@/data/moim-data";
 import { useBackdropClose } from "@/lib/useBackdropClose";
+import { AdminSelect, AdminDatePicker } from "./ui";
 
 type SalesRow = {
   id: string;
@@ -242,27 +243,40 @@ export default function SalesPanel({ flash, mode }: { flash: (m: string) => void
                 onChange={(e) => setQ(e.target.value)}
               />
             </div>
-            <select className="admin-select f-sel f-region" value={region} onChange={(e) => setRegion(e.target.value)}>
-              <option value="all">지점</option>
-              {regions.map((r) => (
-                <option key={r.slug} value={r.slug}>{r.name}</option>
-              ))}
-            </select>
-            <select className="admin-select f-sel f-status" value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="all">상태</option>
-              <option value="paid">결제완료</option>
-              <option value="pending">결제대기</option>
-              <option value="cancelled">취소됨</option>
-              <option value="failed">실패</option>
-            </select>
-            <select className="admin-select f-sel f-gender" value={gender} onChange={(e) => setGender(e.target.value)}>
-              <option value="all">성별</option>
-              <option value="male">남</option>
-              <option value="female">여</option>
-            </select>
-            <input type="date" className="admin-input sales-fdate" value={from} onChange={(e) => setFrom(e.target.value)} title="행사일 시작" />
+            <AdminSelect
+              width={96}
+              value={region}
+              onChange={setRegion}
+              options={[
+                { value: "all", label: "지점" },
+                ...regions.map((r) => ({ value: r.slug, label: r.name })),
+              ]}
+            />
+            <AdminSelect
+              width={108}
+              value={status}
+              onChange={setStatus}
+              options={[
+                { value: "all", label: "상태" },
+                { value: "paid", label: "결제완료" },
+                { value: "pending", label: "결제대기" },
+                { value: "cancelled", label: "취소됨" },
+                { value: "failed", label: "실패" },
+              ]}
+            />
+            <AdminSelect
+              width={84}
+              value={gender}
+              onChange={setGender}
+              options={[
+                { value: "all", label: "성별" },
+                { value: "male", label: "남" },
+                { value: "female", label: "여" },
+              ]}
+            />
+            <AdminDatePicker value={from} onChange={setFrom} placeholder="시작일" />
             <span className="sales-tilde">~</span>
-            <input type="date" className="admin-input sales-fdate" value={to} onChange={(e) => setTo(e.target.value)} title="행사일 끝" />
+            <AdminDatePicker value={to} onChange={setTo} placeholder="종료일" />
             <button className="admin-btn admin-btn-ghost admin-btn-sm" onClick={resetFilters}>초기화</button>
             <button className="admin-btn admin-btn-primary admin-btn-sm" onClick={exportCsv} disabled={rows.length === 0}>
               <Download size={15} /> CSV

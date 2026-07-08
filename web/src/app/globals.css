@@ -3165,19 +3165,6 @@ select.auth-input {
   gap: 8px;
   margin-bottom: 14px;
 }
-.f-sel {
-  height: 38px;
-  flex-shrink: 0;
-}
-.f-region {
-  width: 96px;
-}
-.f-status {
-  width: 108px;
-}
-.f-gender {
-  width: 84px;
-}
 .sales-search {
   display: flex;
   align-items: center;
@@ -3201,12 +3188,192 @@ select.auth-input {
   min-width: 0;
   color: var(--text-primary);
 }
-.sales-fdate {
-  height: 38px;
-  width: 150px;
-}
 .sales-tilde {
   color: var(--text-tertiary);
+}
+
+/* ── 커스텀 드롭다운 / 날짜 피커 (네이티브 팝업 대체) ── */
+.asel,
+.adate {
+  position: relative;
+  flex-shrink: 0;
+}
+.asel-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  background: var(--adm-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+.asel-btn:hover {
+  border-color: var(--text-muted);
+}
+.asel-btn.is-open {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-primary-light);
+}
+.asel-label {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.asel-label.is-empty {
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+.asel-chev {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.asel-chev.is-open {
+  transform: rotate(180deg);
+}
+.asel-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  background: #fff;
+  border: 1px solid var(--adm-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.14);
+  padding: 5px;
+  z-index: 60;
+  animation: aselIn 0.13s ease;
+}
+@keyframes aselIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.asel-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+  text-align: left;
+}
+.asel-opt:hover {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+.asel-opt.is-sel {
+  color: var(--accent-primary);
+  background: var(--accent-primary-light);
+}
+
+/* 날짜 피커 */
+.adate .asel-btn {
+  min-width: 132px;
+}
+.adate-ico {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+.adate-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+.adate-clear:hover {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+.adate-pop {
+  width: 252px;
+  padding: 10px;
+}
+.adate-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.adate-head span {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+.adate-head button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.adate-head button:hover {
+  background: var(--bg-surface);
+}
+.adate-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.adate-dow {
+  margin-bottom: 2px;
+}
+.adate-dow span {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  padding: 3px 0;
+}
+.adate-dow .sun {
+  color: #e64545;
+}
+.adate-dow .sat {
+  color: var(--accent-secondary);
+}
+.adate-day {
+  height: 30px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.adate-day:hover {
+  background: var(--bg-surface);
+}
+.adate-day.is-sel {
+  background: var(--accent-primary);
+  color: #fff;
+  font-weight: 800;
 }
 
 .sales-count {

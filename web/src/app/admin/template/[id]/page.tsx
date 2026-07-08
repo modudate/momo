@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { categoryLabel } from "@/data/taxonomy";
 import { formatKRW } from "@/data/moim-data";
+import { AdminDatePicker } from "../../ui";
 
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
 const GENDERS = [
@@ -434,8 +435,8 @@ export default function TemplateSchedulePage() {
                     })}
                   </div>
                   <div className="admin-field-row">
-                    <input type="date" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)} className="admin-input" />
-                    <input type="date" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} className="admin-input" />
+                    <AdminDatePicker value={rangeStart} onChange={setRangeStart} placeholder="시작일" />
+                    <AdminDatePicker value={rangeEnd} onChange={setRangeEnd} placeholder="종료일" />
                   </div>
                   <div className="flex items-center gap-2 mt-2.5">
                     <input type="time" value={recurTime} onChange={(e) => setRecurTime(e.target.value)} className="admin-input" style={{ width: 130 }} />
