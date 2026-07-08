@@ -19,12 +19,8 @@ import { formatKRW, type Region, type MoimEvent } from "@/data/moim-data";
 
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
 
-// 지점별 네이버지도 검색명
-const MAP_PLACE: Record<string, string> = {
-  gangnam: "모두의모임 선릉점",
-  hongdae: "모두의모임 홍대점",
-  suwon: "모두의모임 수원점",
-};
+// 네이버지도 검색명 (전 지점 동일)
+const MAP_PLACE_NAME = "모두의모임 선릉점";
 
 function ymd(y: number, m: number, d: number) {
   return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
@@ -164,12 +160,12 @@ export default function RegionPage() {
       <div className="page-content pt-4 flex items-end justify-between">
         <div>
           <a
-            href={`https://map.naver.com/p/search/${encodeURIComponent(MAP_PLACE[region.slug] ?? `모두의모임 ${region.name}점`)}`}
+            href={`https://map.naver.com/p/search/${encodeURIComponent(MAP_PLACE_NAME)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="region-map-link"
           >
-            <MapPin size={13} /> {MAP_PLACE[region.slug] ?? `모두의모임 ${region.name}점`}
+            <MapPin size={13} /> {MAP_PLACE_NAME}
           </a>
           <h2 className="tds-title-lg mt-0.5">
             일정을 한눈에!
