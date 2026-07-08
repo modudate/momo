@@ -49,7 +49,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid_image" }, { status: 400 });
   }
 
-  const { error } = await admin.storage.from("images").upload(path, bytes, {
+  // Buffer를 그대로 넘기면 전송 계층에서 UTF-8로 뭉개져 파일이 깨짐 — 반드시 Blob으로
+  const blob = new Blob([new Uint8Array(bytes)], { type: "image/webp" });
+  const { error } = await admin.storage.from("images").upload(path, blob, {
     contentType: "image/webp",
     upsert: false,
     cacheControl: "31536000", // 파일명이 UUID라 1년 캐시 안전
