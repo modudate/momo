@@ -196,10 +196,20 @@ export default function SignupPage() {
               required
             />
             <span className="fld-at">@</span>
+            {emailDomain === "custom" && (
+              <input
+                inputMode="email"
+                placeholder="도메인 입력"
+                value={customDomain}
+                onChange={(event) => setCustomDomain(event.target.value)}
+                className="auth-input fld-email-custom"
+                required
+              />
+            )}
             <select
               value={emailDomain}
               onChange={(event) => setEmailDomain(event.target.value)}
-              className="auth-input fld-email-domain"
+              className={`auth-input fld-email-domain ${emailDomain === "custom" ? "is-custom" : ""}`}
             >
               {EMAIL_DOMAINS.map((d) => (
                 <option key={d} value={d}>
@@ -209,16 +219,6 @@ export default function SignupPage() {
               <option value="custom">직접 입력</option>
             </select>
           </div>
-          {emailDomain === "custom" && (
-            <input
-              inputMode="email"
-              placeholder="도메인 입력 (예: company.co.kr)"
-              value={customDomain}
-              onChange={(event) => setCustomDomain(event.target.value)}
-              className="auth-input mt-2"
-              required
-            />
-          )}
         </div>
 
         <div className="fld">

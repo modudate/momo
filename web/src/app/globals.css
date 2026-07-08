@@ -2295,9 +2295,27 @@ body.with-bottom-nav .app-main {
   font-weight: 700;
   flex-shrink: 0;
 }
+.fld-email-custom {
+  flex: 1;
+  min-width: 0;
+}
 .fld-email-domain {
   width: 138px;
   flex-shrink: 0;
+}
+.fld-email-domain.is-custom {
+  width: 112px; /* 직접입력 칸과 한 줄 공존 */
+}
+
+/* 셀렉트 — 화살표가 벽에 붙지 않게 커스텀 화살표 + 우측 패딩 */
+select.auth-input {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b95a1' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 36px;
 }
 
 /* ---- Sheet / Modal ---- */
