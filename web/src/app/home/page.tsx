@@ -139,8 +139,8 @@ export default function HomePage() {
         </div>
       </Section>
 
-      {/* 인증 모임 */}
-      <Section title="🔥 아무나 참가할 수 없는 인증 모임">
+      {/* 프리미엄 모임 */}
+      <Section title="🔥 특별한 분들을 위한 프리미엄 모임">
         <div className="home-grid">
           {premium.map((c) => (
             <MeetCard key={c.id} {...c} />
