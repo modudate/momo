@@ -777,16 +777,6 @@ body {
   font-weight: 600;
   color: var(--text-secondary);
 }
-.admin-select {
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b95a1' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 15px;
-  padding-right: 32px !important;
-}
-
 .admin-input,
 .admin-select,
 .admin-textarea {
@@ -801,6 +791,31 @@ body {
   outline: none;
   transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
+/* 셀렉트 커스텀 화살표 — 기본 background 뒤에 와야 함 */
+.admin-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b95a1' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 15px;
+  padding-right: 32px;
+}
+
+/* 날짜 입력 — 달력 아이콘 커스텀 (여백·색·커서) */
+.admin-input[type="date"] {
+  padding-right: 10px;
+}
+.admin-input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+  padding: 4px;
+  margin-left: 2px;
+}
+.admin-input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 0.9;
+}
+
 .admin-textarea {
   height: auto;
   padding: 12px 13px;
