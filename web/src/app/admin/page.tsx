@@ -150,7 +150,7 @@ export default function AdminPage() {
       const res = await fetch("/api/admin/session");
       const data = (await res.json().catch(() => ({ isAdmin: false }))) as { isAdmin: boolean };
       if (!data.isAdmin) {
-        setAuthState("denied");
+        router.replace("/admin/login");
         return;
       }
       setAuthState("ok");
@@ -240,21 +240,8 @@ export default function AdminPage() {
     return <div className="admin-root"><div className="admin-empty" style={{ margin: "auto" }}>확인 중…</div></div>;
   }
   if (authState === "denied") {
-    return (
-      <div className="admin-root">
-        <div className="admin-empty" style={{ margin: "auto" }}>
-          <p>관리자 로그인이 필요해요.</p>
-          <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 16 }}>
-            <button className="admin-btn admin-btn-primary" onClick={() => router.push("/login?next=/admin")}>
-              관리자 로그인
-            </button>
-            <button className="admin-btn admin-btn-ghost" onClick={() => router.push("/home")}>
-              홈으로
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    // 미로그인은 /admin/login 으로 보내므로 여기 올 일은 거의 없음 (전환 중 폴백)
+    return <div className="admin-root"><div className="admin-empty" style={{ margin: "auto" }}>확인 중…</div></div>;
   }
 
   const meta = TAB_META[tab];

@@ -1,22 +1,11 @@
 import { getServerUser } from "@/lib/supabase/server";
 import { getAdminClient } from "@/lib/supabase/admin";
 
-// 관리자 이메일 허용 목록 (쉼표 구분, 서버 전용)
-const adminEmails = (process.env.ADMIN_EMAILS ?? "")
-  .split(",")
-  .map((email) => email.trim().toLowerCase())
-  .filter(Boolean);
-
-export function isAdminEmail(email?: string | null): boolean {
-  if (!email) return false;
-  return adminEmails.includes(email.toLowerCase());
-}
-
-// 관리자 접근 허용 여부 — 로그인 필수, ADMIN_EMAILS 또는 profiles.is_admin
+// 관리자 접근 허용 여부 — 로그인 필수 + profiles.is_admin
+// (이메일 허용목록 방식은 미인증 가입으로 탈취될 수 있어 제거, DB 플래그만 사용)
 export async function isAdminAllowed(): Promise<boolean> {
   const user = await getServerUser();
   if (!user) return false;
-  if (isAdminEmail(user.email)) return true;
 
   const admin = getAdminClient();
   if (!admin) return false;

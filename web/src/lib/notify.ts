@@ -1,7 +1,7 @@
 import { getAdminClient } from "@/lib/supabase/admin";
 import { isPushConfigured, sendPush, type PushSubscriptionRecord } from "@/lib/push";
 
-// 관리자(ADMIN_EMAILS)에게 웹푸시 알림 — 신청/취소 발생 시 호출
+// 관리자(profiles.is_admin)에게 웹푸시 알림 — 신청/취소 발생 시 호출
 // 실패해도 주문 흐름을 막지 않도록 호출측에서 catch 없이 fire-and-forget 사용 가능
 export async function notifyAdmins(title: string, body: string, url = "/admin") {
   try {
@@ -9,17 +9,12 @@ export async function notifyAdmins(title: string, body: string, url = "/admin") 
     const admin = getAdminClient();
     if (!admin) return;
 
-    const adminEmails = (process.env.ADMIN_EMAILS ?? "")
-      .split(",")
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
-    if (adminEmails.length === 0) return;
-
-    // 관리자 이메일 → user id (RPC: auth.users + profiles)
-    const { data: members } = await admin.rpc("admin_member_list");
-    const adminIds = ((members ?? []) as { id: string; email: string | null }[])
-      .filter((m) => m.email && adminEmails.includes(m.email.toLowerCase()))
-      .map((m) => m.id);
+    const { data: adminProfiles } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("is_admin", true)
+      .returns<{ id: string }[]>();
+    const adminIds = (adminProfiles ?? []).map((p) => p.id);
     if (adminIds.length === 0) return;
 
     const { data: subs } = await admin

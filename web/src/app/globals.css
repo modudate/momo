@@ -736,6 +736,57 @@ body {
   justify-content: center;
   padding: 20px;
 }
+/* 관리자 로그인 (PC) */
+.admin-login-root {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--adm-bg);
+  padding: 24px;
+}
+.admin-login-card {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  border: 1px solid var(--adm-border);
+  border-radius: 18px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+  padding: 36px 32px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.admin-login-logo {
+  width: 132px;
+  height: auto;
+  margin: 0 auto 4px;
+}
+.admin-login-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+.admin-login-card .admin-label {
+  margin-top: 6px;
+}
+.admin-login-error {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e64545;
+  margin-top: 4px;
+}
+.admin-login-submit {
+  margin-top: 14px;
+  height: 44px;
+  justify-content: center;
+}
+
 .admin-modal {
   width: 100%;
   max-width: 520px;
