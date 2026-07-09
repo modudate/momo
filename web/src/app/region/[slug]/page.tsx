@@ -169,7 +169,7 @@ export default function RegionPage() {
             rel="noopener noreferrer"
             className="region-map-link"
           >
-            <MapPin size={13} /> 네이버지도 &quot;{MAP_PLACE[region.slug] ?? `모두의모임 ${region.name}점`}&quot;
+            <MapPin size={13} /> &quot;{MAP_PLACE[region.slug] ?? `모두의모임 ${region.name}점`}&quot; 장소(클릭)
           </a>
           <h2 className="tds-title-lg mt-0.5">
             일정을 한눈에!
