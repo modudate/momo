@@ -39,7 +39,9 @@ export default function LoginPage() {
       setErrorMessage(friendlyMessage);
       return;
     }
-    router.push("/mypage");
+    // ?next=/admin 처럼 돌아갈 곳이 지정돼 있으면 그리로 (내부 경로만)
+    const next = new URLSearchParams(window.location.search).get("next");
+    router.push(next && next.startsWith("/") && !next.startsWith("//") ? next : "/mypage");
     router.refresh();
   };
 

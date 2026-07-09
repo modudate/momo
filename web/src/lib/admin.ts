@@ -1,4 +1,5 @@
 import { getServerUser } from "@/lib/supabase/server";
+import { getAdminClient } from "@/lib/supabase/admin";
 
 // 관리자 이메일 허용 목록 (쉼표 구분, 서버 전용)
 const adminEmails = (process.env.ADMIN_EMAILS ?? "")
@@ -6,17 +7,23 @@ const adminEmails = (process.env.ADMIN_EMAILS ?? "")
   .map((email) => email.trim().toLowerCase())
   .filter(Boolean);
 
-// 개발 중 임시 전체 공개 — 잠그려면 ADMIN_OPEN 을 false 로 (또는 제거)
-const isAdminOpen = process.env.ADMIN_OPEN === "true";
-
 export function isAdminEmail(email?: string | null): boolean {
   if (!email) return false;
   return adminEmails.includes(email.toLowerCase());
 }
 
-// 관리자 접근 허용 여부 (ADMIN_OPEN=true 면 무제한 공개)
+// 관리자 접근 허용 여부 — 로그인 필수, ADMIN_EMAILS 또는 profiles.is_admin
 export async function isAdminAllowed(): Promise<boolean> {
-  if (isAdminOpen) return true;
   const user = await getServerUser();
-  return isAdminEmail(user?.email);
+  if (!user) return false;
+  if (isAdminEmail(user.email)) return true;
+
+  const admin = getAdminClient();
+  if (!admin) return false;
+  const { data } = await admin
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .maybeSingle<{ is_admin: boolean }>();
+  return data?.is_admin === true;
 }

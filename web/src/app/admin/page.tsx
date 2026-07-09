@@ -243,10 +243,15 @@ export default function AdminPage() {
     return (
       <div className="admin-root">
         <div className="admin-empty" style={{ margin: "auto" }}>
-          <p>접근 권한이 없어요.</p>
-          <button className="admin-btn admin-btn-primary" style={{ marginTop: 16 }} onClick={() => router.push("/home")}>
-            홈으로
-          </button>
+          <p>관리자 로그인이 필요해요.</p>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 16 }}>
+            <button className="admin-btn admin-btn-primary" onClick={() => router.push("/login?next=/admin")}>
+              관리자 로그인
+            </button>
+            <button className="admin-btn admin-btn-ghost" onClick={() => router.push("/home")}>
+              홈으로
+            </button>
+          </div>
         </div>
       </div>
     );
