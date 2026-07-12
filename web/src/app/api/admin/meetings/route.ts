@@ -13,7 +13,7 @@ export async function GET() {
   }
   const { data: meetings } = await supabaseAdmin
     .from("meetings")
-    .select("id,region_slug,date,time,title,tag,price,capacity,joined,description,place")
+    .select("id,region_slug,date,time,end_time,hidden,title,tag,price,capacity,joined,description,place")
     .order("date", { ascending: true });
   return NextResponse.json({ meetings: meetings ?? [] });
 }
@@ -22,6 +22,8 @@ type CreateBody = {
   regionSlug?: string;
   date?: string;
   time?: string;
+  endTime?: string; // HH:mm — 지나면 손님 화면에서 자동으로 사라짐
+  hidden?: boolean; // 관리자 강제 숨김
   title?: string;
   tag?: string;
   price?: number;
@@ -48,7 +50,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
   }
 
-  const { regionSlug, date, time, title, tag, price, capacity, image, description, place } =
+  const { regionSlug, date, time, endTime, title, tag, price, capacity, image, description, place } =
     body;
   if (!regionSlug || !date || !time || !title || price == null || capacity == null) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
@@ -60,6 +62,7 @@ export async function POST(req: Request) {
     region_slug: regionSlug,
     date,
     time,
+    end_time: endTime || null,
     title,
     tag: tag || "정기모임",
     price,
@@ -98,20 +101,25 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "id_required" }, { status: 400 });
   }
 
-  const { error } = await supabaseAdmin
-    .from("meetings")
-    .update({
-      region_slug: body.regionSlug,
-      date: body.date,
-      time: body.time,
-      title: body.title,
-      tag: body.tag || "정기모임",
-      price: body.price,
-      capacity: body.capacity,
-      description: body.description ?? null,
-      place: body.place ?? null,
-    })
-    .eq("id", body.id);
+  // hidden만 보내면(강제 숨김 토글) 그 필드만 갱신
+  const patch: Record<string, unknown> =
+    body.regionSlug === undefined && body.hidden !== undefined
+      ? { hidden: body.hidden }
+      : {
+          region_slug: body.regionSlug,
+          date: body.date,
+          time: body.time,
+          end_time: body.endTime || null,
+          title: body.title,
+          tag: body.tag || "정기모임",
+          price: body.price,
+          capacity: body.capacity,
+          description: body.description ?? null,
+          place: body.place ?? null,
+          ...(body.hidden !== undefined ? { hidden: body.hidden } : {}),
+        };
+
+  const { error } = await supabaseAdmin.from("meetings").update(patch).eq("id", body.id);
 
   if (error) {
     return NextResponse.json({ error: "update_failed", detail: error.message }, { status: 500 });

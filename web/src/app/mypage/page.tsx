@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, Ticket, CalendarDays, Shield, ChevronRight } from "lucide-react";
+import { LogOut, Ticket, CalendarDays, Shield, ChevronRight, PenLine } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import SiteFooter from "@/components/SiteFooter";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
@@ -18,6 +18,9 @@ type OrderRow = {
   meetings: { title: string; date: string; time: string } | null;
 };
 
+// 후기 작성 가능한 예약 (예약 1건당 1개, 이미 쓴 건 제외)
+type WritableOrder = { id: string };
+
 const statusLabel: Record<OrderRow["status"], string> = {
   paid: "결제완료",
   pending: "결제대기",
@@ -30,6 +33,7 @@ export default function MyPage() {
   const [email, setEmail] = useState<string | null>(null);
   const [name, setName] = useState<string>("");
   const [orders, setOrders] = useState<OrderRow[] | null>(null);
+  const [writable, setWritable] = useState<Set<string>>(new Set());
   const [ready, setReady] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -55,6 +59,14 @@ export default function MyPage() {
         .select("id,amount,status,created_at,meetings(title,date,time)")
         .order("created_at", { ascending: false });
       setOrders((orderRows as OrderRow[] | null) ?? []);
+
+      // 후기 작성 가능한 예약 (이미 쓴 건 제외)
+      fetch("/api/reviews/writable")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d: { orders: WritableOrder[] } | null) => {
+          setWritable(new Set((d?.orders ?? []).map((o) => o.id)));
+        })
+        .catch(() => {});
 
       // 관리자 여부 확인 (관리자면 관리자 페이지 링크 노출)
       const adminResponse = await fetch("/api/admin/session");
@@ -173,6 +185,12 @@ export default function MyPage() {
                     {Number(order.meetings.date.slice(5, 7))}월{" "}
                     {Number(order.meetings.date.slice(8, 10))}일 {order.meetings.time}
                   </p>
+                )}
+                {/* 후기 작성 — 예약 1건당 1개, 이미 쓴 예약에는 안 보임 */}
+                {writable.has(order.id) && (
+                  <Link href={`/reviews/write?order=${order.id}`} className="mp-review-btn">
+                    <PenLine size={14} /> 후기 작성
+                  </Link>
                 )}
               </div>
             ))}

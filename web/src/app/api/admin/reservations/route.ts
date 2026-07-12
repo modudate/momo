@@ -42,7 +42,7 @@ export async function GET(req: Request) {
   let meetingsQuery = supabaseAdmin
     .from("meetings")
     .select(
-      "id,region_slug,template_id,date,time,title,tag,price,capacity,description,place,closed_male,closed_female,virtual_male,virtual_female,regions(name)",
+      "id,region_slug,template_id,date,time,end_time,hidden,title,tag,price,capacity,description,place,closed_male,closed_female,virtual_male,virtual_female,regions(name)",
     )
     .gte("date", start)
     .lt("date", end)
@@ -57,6 +57,8 @@ export async function GET(req: Request) {
       template_id: string | null;
       date: string;
       time: string;
+      end_time: string | null;
+      hidden: boolean | null;
       title: string;
       tag: string;
       price: number;
@@ -108,6 +110,8 @@ export async function GET(req: Request) {
       region_name: m.regions?.name ?? m.region_slug,
       date: m.date,
       time: m.time,
+      end_time: m.end_time,
+      hidden: m.hidden ?? false,
       title: m.title,
       tag: m.tag,
       price: m.price,

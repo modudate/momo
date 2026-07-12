@@ -17,15 +17,19 @@ export type MoimEvent = {
   id: string;
   date: string; // YYYY-MM-DD
   time: string; // HH:mm
+  endTime?: string | null; // HH:mm — 종료 시간 (지나면 손님 화면에서 사라짐)
+  hidden?: boolean; // 관리자 강제 숨김
   title: string;
   tag: string;
   price: number; // 카드 결제 (티켓)
+  priceFrom?: number; // 옵션 중 최저가 (옵션이 있을 때)
+  priceVaries?: boolean; // 옵션별 가격이 다르면 true → "39,900원~" 표기
   capacity: number;
   joined: number; // 손님에게 보이는 인원 (실구매+가상)
   male?: number; // 남자 신청 (실+가상)
   female?: number; // 여자 신청 (실+가상)
   image: string;
-  description?: string; // 상세 소개
+  description?: string; // 상세 소개 (카드의 회색 한 줄)
   place?: string; // 장소
 };
 

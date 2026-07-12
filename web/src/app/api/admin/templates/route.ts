@@ -13,8 +13,9 @@ type TemplateBody = {
   price?: number;
   capacity?: number;
   image?: string;
-  homeSection?: string; // "" | "signature" | "premium"
+  homeSection?: string; // 홈 카테고리 key ("" = 노출 안함)
   homeBadge?: string; // 홈 카드 검정 뱃지 문구
+  homeLabel?: string; // 홈 카드 주황 라벨 (비우면 카테고리 기본 라벨)
   duplicateFrom?: string; // 복제 원본 템플릿 id
 };
 
@@ -43,7 +44,7 @@ export async function GET() {
   const { data: templates } = await supabaseAdmin
     .from("moim_templates")
     .select(
-      "id,category,region_slug,age_group,title,description,place,price,capacity,image,home_section,home_badge",
+      "id,category,region_slug,age_group,title,description,place,price,capacity,image,home_section,home_badge,home_label",
     )
     .order("created_at", { ascending: false });
   return NextResponse.json({ templates: templates ?? [] });
@@ -98,6 +99,7 @@ export async function POST(req: Request) {
     image: body.image || base.image || `https://picsum.photos/seed/${id}/800/600`,
     home_section: body.homeSection || null,
     home_badge: body.homeBadge?.trim() || null,
+    home_label: body.homeLabel?.trim() || null,
   });
   if (error) {
     return NextResponse.json({ error: "create_failed", detail: error.message }, { status: 500 });
@@ -137,6 +139,7 @@ export async function PATCH(req: Request) {
       ...(body.image ? { image: body.image } : {}),
       home_section: body.homeSection || null,
       home_badge: body.homeBadge?.trim() || null,
+      home_label: body.homeLabel?.trim() || null,
     })
     .eq("id", body.id);
   if (error) {

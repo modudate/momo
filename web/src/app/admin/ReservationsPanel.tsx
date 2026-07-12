@@ -17,6 +17,8 @@ import {
   Ban,
   Lock,
   LockOpen,
+  Eye,
+  EyeOff,
   Copy as CopyIcon,
 } from "lucide-react";
 import { toPng } from "html-to-image";
@@ -31,6 +33,8 @@ type ResMeeting = {
   region_name: string;
   date: string;
   time: string;
+  end_time: string | null;
+  hidden: boolean;
   title: string;
   tag: string;
   price: number;
@@ -116,6 +120,7 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
     regionSlug: (regions[0]?.slug ?? "gangnam") as string,
     date: `${year}-${pad(month)}-01`,
     time: "19:30",
+    endTime: "", // 비우면 자동으로 사라지지 않음
     title: "",
     tag: "정기모임",
     price: 25000,
@@ -407,6 +412,7 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
       regionSlug: m.region_slug,
       date: m.date,
       time: m.time,
+      endTime: m.end_time ?? "",
       title: m.title,
       tag: m.tag,
       price: m.price,
@@ -415,6 +421,23 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
       description: m.description ?? "",
     });
     setMeetingModal({ open: true, editId: m.id });
+  };
+
+  // 손님 화면에서 강제로 내리기 / 다시 올리기
+  const toggleHidden = async (m: ResMeeting) => {
+    const next = !m.hidden;
+    const res = await fetch("/api/admin/meetings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: m.id, hidden: next }),
+    });
+    if (res.ok) {
+      flash(next ? "손님 화면에서 내렸어요." : "손님 화면에 다시 올렸어요.");
+      setSelected((s) => (s && s.id === m.id ? { ...s, hidden: next } : s));
+      load();
+    } else {
+      flash("변경에 실패했어요.");
+    }
   };
   const saveMeeting = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -634,6 +657,14 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
                   {selected.closed_female ? "여 재오픈" : "여 마감"}
                 </button>
                 <button
+                  className={`admin-btn admin-btn-sm ${selected.hidden ? "admin-btn-primary" : "admin-btn-ghost"}`}
+                  onClick={() => toggleHidden(selected)}
+                  title="손님 화면(일정 목록)에서 이 모임을 내리거나 다시 올려요"
+                >
+                  {selected.hidden ? <Eye size={14} /> : <EyeOff size={14} />}
+                  {selected.hidden ? "다시 노출" : "손님화면 내리기"}
+                </button>
+                <button
                   className="admin-btn admin-btn-primary admin-btn-sm"
                   onClick={saveImage}
                   disabled={saving || attendees.length === 0}
@@ -787,7 +818,7 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
                   />
                 </div>
                 <div className="admin-field">
-                  <label className="admin-label">시간</label>
+                  <label className="admin-label">시작 시간</label>
                   <input
                     className="admin-input"
                     type="time"
@@ -795,6 +826,16 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
                     onChange={(e) => setMForm({ ...mForm, time: e.target.value })}
                     required
                   />
+                </div>
+                <div className="admin-field">
+                  <label className="admin-label">종료 시간</label>
+                  <input
+                    className="admin-input"
+                    type="time"
+                    value={mForm.endTime}
+                    onChange={(e) => setMForm({ ...mForm, endTime: e.target.value })}
+                  />
+                  <p className="admin-hint">지나면 손님 화면에서 자동으로 사라져요 (비우면 유지)</p>
                 </div>
               </div>
               <div className="admin-field">
@@ -804,6 +845,15 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
                   value={mForm.title}
                   onChange={(e) => setMForm({ ...mForm, title: e.target.value })}
                   required
+                />
+              </div>
+              <div className="admin-field">
+                <label className="admin-label">소개 문구 (손님 목록의 회색 한 줄)</label>
+                <input
+                  className="admin-input"
+                  value={mForm.description}
+                  onChange={(e) => setMForm({ ...mForm, description: e.target.value })}
+                  placeholder="예: 외모 승인 프리미엄에 도전하는 모임"
                 />
               </div>
               <div className="admin-field-row">

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { getServerUser } from "@/lib/supabase/server";
 import { getMeetingLite, getMeetingOptions } from "@/lib/data";
-import { isBookingOpen } from "@/lib/booking";
+import { isBookingOpen, isMeetingVisible } from "@/lib/booking";
 import { notifyAdmins } from "@/lib/notify";
 
 type Ticket = {
@@ -49,6 +49,11 @@ export async function POST(req: Request) {
   const meeting = await getMeetingLite(meetingId);
   if (!meeting) {
     return NextResponse.json({ error: "meeting_not_found" }, { status: 404 });
+  }
+
+  // 관리자가 손님 화면에서 내렸거나 종료 시간이 지난 모임은 신청 불가
+  if (!isMeetingVisible({ date: meeting.date, time: meeting.time, endTime: meeting.end_time, hidden: meeting.hidden })) {
+    return NextResponse.json({ error: "closed" }, { status: 409 });
   }
 
   // 신청 마감 검증

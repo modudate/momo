@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ImageIcon, ChevronRight } from "lucide-react";
+import { ImageIcon, ChevronRight, ThumbsUp, ThumbsDown } from "lucide-react";
 import SiteFooter from "@/components/SiteFooter";
 
 // 상단 메뉴
@@ -14,7 +14,7 @@ const menu = [
   { label: "문의", href: "/contact" },
 ];
 
-// 홈 모임 카드 — 관리자 예약 상품의 "홈 노출" 플래그에서 로드
+// 홈 모임 카드 — 관리자 예약 상품의 "홈 노출" 카테고리에서 로드
 type HomeCard = {
   id: string;
   label: string;
@@ -25,14 +25,27 @@ type HomeCard = {
   href: string;
 };
 
-// 상품이 아직 지정되지 않았을 때의 기본 카드
-const fallbackSignature: HomeCard[] = [
-  { id: "s1", label: "시그니처", title: "모두의 와인", badge: "자연스러운 대화의 장", tags: ["2030", "3045"], image: null, href: "/region/gangnam" },
-  { id: "s2", label: "시그니처", title: "모두의 커피", badge: "1:1 더욱 깊은 대화", tags: ["2030", "3045"], image: null, href: "/region/gangnam" },
-];
-const fallbackPremium: HomeCard[] = [
-  { id: "p1", label: "프리미엄", title: "모두의 와인", badge: "압도적인 매력 검증", tags: ["2040"], image: null, href: "/verify" },
-  { id: "p2", label: "인기남녀", title: "모두의 커피", badge: "누가봐도 호감형", tags: ["2030"], image: null, href: "/verify" },
+// 홈 섹션(카테고리) — 관리자에서 추가·수정
+type HomeSection = { key: string; title: string; cards: HomeCard[] };
+
+// 상품이 아직 지정되지 않았을 때의 기본 화면
+const fallbackSections: HomeSection[] = [
+  {
+    key: "signature",
+    title: "🔥 모두의 모임을 대표하는 시그니처 모임",
+    cards: [
+      { id: "s1", label: "시그니처", title: "모두의 와인", badge: "자연스러운 대화의 장", tags: ["2030", "3045"], image: null, href: "/region/gangnam" },
+      { id: "s2", label: "시그니처", title: "모두의 커피", badge: "1:1 더욱 깊은 대화", tags: ["2030", "3045"], image: null, href: "/region/gangnam" },
+    ],
+  },
+  {
+    key: "premium",
+    title: "🔥 특별한 분들을 위한 프리미엄 모임",
+    cards: [
+      { id: "p1", label: "프리미엄", title: "모두의 와인", badge: "압도적인 매력 검증", tags: ["2040"], image: null, href: "/verify" },
+      { id: "p2", label: "인기남녀", title: "모두의 커피", badge: "누가봐도 호감형", tags: ["2030"], image: null, href: "/verify" },
+    ],
+  },
 ];
 
 // 사진 자리 (나중에 이미지로 교체)
@@ -53,25 +66,33 @@ const DEFAULT_HERO: Hero = {
   images: [],
 };
 
+type ReviewCard = { id: string; author: string; content: string; up: number; down: number };
+
 export default function HomePage() {
-  const [signature, setSignature] = useState<HomeCard[]>(fallbackSignature);
-  const [premium, setPremium] = useState<HomeCard[]>(fallbackPremium);
+  const [sections, setSections] = useState<HomeSection[]>(fallbackSections);
   const [hero, setHero] = useState<Hero>(DEFAULT_HERO);
   const [slide, setSlide] = useState(0);
+  const [reviews, setReviews] = useState<ReviewCard[]>([]);
 
   useEffect(() => {
     let active = true;
     fetch("/api/home/content")
       .then((res) => (res.ok ? res.json() : null))
-      .then(
-        (data: { hero: Hero | null; signature: HomeCard[]; premium: HomeCard[] } | null) => {
-          if (!active || !data) return;
-          if (data.hero) setHero({ ...DEFAULT_HERO, ...data.hero });
-          if (data.signature.length > 0) setSignature(data.signature);
-          if (data.premium.length > 0) setPremium(data.premium);
-        },
-      )
+      .then((data: { hero: Hero | null; sections: HomeSection[] } | null) => {
+        if (!active || !data) return;
+        if (data.hero) setHero({ ...DEFAULT_HERO, ...data.hero });
+        if (data.sections?.length > 0) setSections(data.sections);
+      })
       .catch(() => {});
+
+    // 최신 후기 3건
+    fetch("/api/reviews?limit=3")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { reviews: ReviewCard[] } | null) => {
+        if (active && data?.reviews) setReviews(data.reviews);
+      })
+      .catch(() => {});
+
     return () => {
       active = false;
     };
@@ -130,40 +151,48 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 시그니처 모임 */}
-      <Section title="🔥 모두의 모임을 대표하는 시그니처 모임">
-        <div className="home-grid">
-          {signature.map((c) => (
-            <MeetCard key={c.id} {...c} />
-          ))}
-        </div>
-      </Section>
-
-      {/* 프리미엄 모임 */}
-      <Section title="🔥 특별한 분들을 위한 프리미엄 모임">
-        <div className="home-grid">
-          {premium.map((c) => (
-            <MeetCard key={c.id} {...c} />
-          ))}
-        </div>
-      </Section>
+      {/* 모임 섹션 — 관리자 카테고리 기준 (시그니처 / 프리미엄 / 추가 카테고리…) */}
+      {sections.map((s) => (
+        <Section key={s.key} title={s.title}>
+          <div className="home-grid">
+            {s.cards.map((c) => (
+              <MeetCard key={c.id} {...c} />
+            ))}
+          </div>
+        </Section>
+      ))}
 
       {/* 후기 */}
-      <Section title="👀 모두의 모임 후기" more="/verify">
+      <Section title="👀 모두의 모임 후기" more="/reviews">
         <article className="home-review">
-          <Ph className="home-review-ph" />
+          {/* 고정 대표 이미지 (후기는 글만 작성) */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/moso-hero.webp" alt="" loading="lazy" decoding="async" className="home-review-ph home-review-img" />
           <div className="home-review-body">
-            <span className="home-card-label">소문난 커리클럽 맛집!</span>
-            <p className="home-review-title">파트너님의 최고의 큐레이션</p>
-            <p className="home-review-text">
-              파트너님이 준비해주시는 풍부한 도서 및 발제 자료와 멤버들의 활발한 토론으로 매달 성장을
-              경험하고 있어요. 소문난 커리클럽의 진짜 멤버들의 후기를 확인해보세요.
-            </p>
+            {reviews.length === 0 ? (
+              <>
+                <span className="home-card-label">첫 후기를 기다려요</span>
+                <p className="home-review-title">모임 후기를 남겨주세요</p>
+                <p className="home-review-text">
+                  모임에 참여하신 분들만 후기를 남길 수 있어요. 마이페이지 신청내역에서 후기를 작성해 주세요.
+                </p>
+              </>
+            ) : (
+              <>
+                <span className="home-card-label">{reviews[0].author}님의 후기</span>
+                <p className="home-review-title">모두의 모임에 다녀왔어요</p>
+                <p className="home-review-text">{reviews[0].content}</p>
+                <p className="home-review-react">
+                  <ThumbsUp size={13} /> {reviews[0].up}
+                  <ThumbsDown size={13} /> {reviews[0].down}
+                </p>
+              </>
+            )}
           </div>
           <div className="home-dots">
-            <i className="on" />
-            <i />
-            <i />
+            {(reviews.length > 0 ? reviews : [0, 0, 0]).map((_, i) => (
+              <i key={i} className={i === 0 ? "on" : ""} />
+            ))}
           </div>
         </article>
       </Section>
@@ -175,7 +204,7 @@ export default function HomePage() {
           <br />
           자주 묻는 질문
         </p>
-        <Link href="/contact" className="home-cta-btn">
+        <Link href="/faq" className="home-cta-btn">
           자세히보기
         </Link>
       </section>

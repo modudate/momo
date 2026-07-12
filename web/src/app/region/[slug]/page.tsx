@@ -6,7 +6,6 @@ import { useParams, notFound } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
-  Clock,
   Users,
   CalendarDays,
   MapPin,
@@ -18,6 +17,9 @@ import { isBookingOpen } from "@/lib/booking";
 import { formatKRW, type Region, type MoimEvent } from "@/data/moim-data";
 
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
+
+// 마감임박 기준 — 정원의 88% 이상
+const CLOSING_SOON_RATIO = 0.88;
 
 // 지점별 네이버지도 검색명
 const MAP_PLACE: Record<string, string> = {
@@ -317,21 +319,44 @@ export default function RegionPage() {
         <div className="flex flex-col gap-3">
           {dayEvents.map((e) => {
             const open = isBookingOpen(e.date, e.time);
-            const closed = e.capacity - e.joined <= 0 || !open;
+            const full = e.capacity - e.joined <= 0; // 정원 마감 (사라지지 않고 "전원 마감" 표기)
+            const closed = full || !open;
+            // 정원의 88% 이상 차면 "마감임박"
+            const ratio = e.capacity > 0 ? e.joined / e.capacity : 0;
+            const almostFull = !full && ratio >= CLOSING_SOON_RATIO;
+            const priceFrom = e.priceFrom ?? e.price;
             return (
               <article key={e.id} className={`evt-card ${closed ? "is-closed" : ""}`}>
                 <Link href={`/meeting/${e.id}`} className="evt-top">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={e.image} alt={e.title} loading="lazy" decoding="async" className="evt-thumb" />
+                  {/* 시간 — 카드 왼쪽 */}
+                  <div className="evt-time">
+                    <b>{e.time}</b>
+                    {e.endTime && <span>~{e.endTime}</span>}
+                  </div>
+
                   <div className="evt-info">
                     <p className="evt-title">
                       {e.title}
-                      {closed && <span className="evt-closed-chip">마감</span>}
+                      {full ? (
+                        <span className="evt-closed-chip">전원 마감</span>
+                      ) : !open ? (
+                        <span className="evt-closed-chip">마감</span>
+                      ) : almostFull ? (
+                        <span className="evt-soon-chip">마감임박</span>
+                      ) : null}
                     </p>
-                    <p className="evt-meta">
-                      <Clock size={13} />
-                      <span className="evt-mtxt">{e.time} · {e.tag}</span>
-                    </p>
+
+                    {/* 회색 소개 문구 한 줄 (관리자에서 수정) */}
+                    {e.description && <p className="evt-desc">{e.description}</p>}
+
+                    {/* 정원 채움 바 */}
+                    <div className="evt-bar" aria-hidden>
+                      <i
+                        className={almostFull || full ? "is-hot" : ""}
+                        style={{ width: `${Math.min(100, Math.round(ratio * 100))}%` }}
+                      />
+                    </div>
+
                     <p className="evt-meta">
                       <Users size={13} />
                       <span className="evt-mtxt">
@@ -339,7 +364,10 @@ export default function RegionPage() {
                       </span>
                     </p>
                     <p className="evt-meta">
-                      <b className="evt-price">{formatKRW(e.price)}</b>
+                      <b className="evt-price">
+                        {formatKRW(priceFrom)}
+                        {e.priceVaries && "~"}
+                      </b>
                     </p>
                   </div>
                 </Link>

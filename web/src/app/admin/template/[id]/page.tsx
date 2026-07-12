@@ -74,6 +74,8 @@ export default function TemplateSchedulePage() {
   const [month, setMonth] = useState(today.getMonth());
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [time, setTime] = useState("19:30");
+  // 종료 시간 — 지나면 손님 화면에서 자동으로 사라짐 (비우면 유지)
+  const [endTime, setEndTime] = useState("");
 
   const [weekdays, setWeekdays] = useState<Set<number>>(new Set());
   const [rangeStart, setRangeStart] = useState("");
@@ -190,7 +192,7 @@ export default function TemplateSchedulePage() {
     });
   };
 
-  const generate = async (slots: { date: string; time: string }[]) => {
+  const generate = async (slots: { date: string; time: string; endTime?: string }[]) => {
     if (slots.length === 0) { flash("선택된 날짜가 없어요."); return; }
     const res = await fetch("/api/admin/templates/sessions", {
       method: "POST",
@@ -207,16 +209,17 @@ export default function TemplateSchedulePage() {
     }
   };
 
-  const generateSelected = () => generate([...selectedDates].map((date) => ({ date, time })));
+  const generateSelected = () =>
+    generate([...selectedDates].map((date) => ({ date, time, endTime })));
 
   const generateRecurring = () => {
     if (!rangeStart || !rangeEnd || weekdays.size === 0) { flash("요일과 기간을 선택해 주세요."); return; }
     const start = parseLocal(rangeStart);
     const end = parseLocal(rangeEnd);
-    const slots: { date: string; time: string }[] = [];
+    const slots: { date: string; time: string; endTime?: string }[] = [];
     for (let day = new Date(start); day <= end; day.setDate(day.getDate() + 1)) {
       if (weekdays.has(day.getDay())) {
-        slots.push({ date: ymd(day.getFullYear(), day.getMonth(), day.getDate()), time: recurTime });
+        slots.push({ date: ymd(day.getFullYear(), day.getMonth(), day.getDate()), time: recurTime, endTime });
       }
     }
     generate(slots);
@@ -387,12 +390,18 @@ export default function TemplateSchedulePage() {
                   })}
                 </div>
                 <div className="flex items-center gap-2 mt-4">
-                  <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="admin-input" style={{ width: 130 }} />
+                  <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="admin-input" style={{ width: 118 }} title="시작 시간" />
+                  <span className="tds-caption">~</span>
+                  <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="admin-input" style={{ width: 118 }} title="종료 시간 (비우면 자동으로 사라지지 않음)" />
                   <button type="button" onClick={generateSelected} className="admin-btn admin-btn-primary" style={{ flex: 1 }}>
                     <CalendarCheck size={16} /> 선택 {selectedDates.size}일 생성
                   </button>
                 </div>
-                <p className="tds-caption mt-2">점이 있는 날 = 이미 생성된 일정. 날짜를 눌러 선택 후 생성하세요.</p>
+                <p className="tds-caption mt-2">
+                  점이 있는 날 = 이미 생성된 일정. 날짜를 눌러 선택 후 생성하세요.
+                  <br />
+                  종료 시간을 넣으면 그 시간이 지날 때 손님 화면에서 자동으로 사라져요. (비우면 계속 노출)
+                </p>
               </div>
             </div>
 

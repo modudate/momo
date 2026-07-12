@@ -65,7 +65,7 @@ export async function GET(req: Request) {
 
 type GenerateBody = {
   templateId?: string;
-  slots?: { date: string; time: string }[];
+  slots?: { date: string; time: string; endTime?: string }[];
 };
 
 // 일정 생성 — 달력/정기 선택으로 만든 (date,time) 목록을 받아 세션 일괄 생성
@@ -119,6 +119,7 @@ export async function POST(req: Request) {
       region_slug: template.region_slug,
       date: slot.date,
       time: slot.time,
+      end_time: slot.endTime || null,
       title: template.title,
       tag,
       price: template.price,

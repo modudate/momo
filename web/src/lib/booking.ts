@@ -15,3 +15,26 @@ export function isBookingOpen(
 ): boolean {
   return nowMs <= meetingStartMs(date, time) - cutoffMinutes * 60_000;
 }
+
+// 모임이 끝났는지 — 종료 시간(HH:mm)이 설정된 경우에만 판단.
+// 종료 시간이 시작 시간보다 이르면 자정을 넘긴 것으로 보고 다음날로 계산 (예: 21:00~01:00)
+export function isMeetingEnded(
+  date: string,
+  time: string,
+  endTime: string | null | undefined,
+  nowMs: number = Date.now(),
+): boolean {
+  if (!endTime) return false;
+  let endMs = meetingStartMs(date, endTime);
+  if (endMs <= meetingStartMs(date, time)) endMs += 24 * 60 * 60_000;
+  return nowMs > endMs;
+}
+
+// 손님 화면에 이 모임을 노출할지 — 관리자 강제 숨김 / 종료 시간 경과면 숨김
+export function isMeetingVisible(
+  m: { date: string; time: string; endTime?: string | null; hidden?: boolean },
+  nowMs: number = Date.now(),
+): boolean {
+  if (m.hidden) return false;
+  return !isMeetingEnded(m.date, m.time, m.endTime, nowMs);
+}

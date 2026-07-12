@@ -6,6 +6,7 @@ import {
   type MoimEvent,
 } from "@/data/moim-data";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { isMeetingVisible } from "@/lib/booking";
 
 type DbRegion = {
   slug: string;
@@ -20,6 +21,8 @@ type DbMeeting = {
   region_slug: string;
   date: string;
   time: string;
+  end_time?: string | null;
+  hidden?: boolean | null;
   title: string;
   tag: string;
   price: number;
@@ -33,6 +36,8 @@ function mapEvent(e: DbMeeting): MoimEvent {
     id: e.id,
     date: e.date,
     time: e.time,
+    endTime: e.end_time ?? null,
+    hidden: e.hidden ?? false,
     title: e.title,
     tag: e.tag,
     price: e.price,
@@ -55,15 +60,29 @@ export async function getRegionWithEvents(slug: string): Promise<Region | null> 
     .single<DbRegion>();
   if (!region) return null;
 
-  const { data: events } = await admin
+  const { data: allEvents } = await admin
     .from("meetings")
-    .select("id,region_slug,date,time,title,tag,price,capacity,joined,image,virtual_male,virtual_female")
+    .select(
+      "id,region_slug,date,time,end_time,hidden,title,tag,price,capacity,joined,image,description,template_id,virtual_male,virtual_female",
+    )
     .eq("region_slug", slug)
     .order("date", { ascending: true })
-    .returns<(DbMeeting & { virtual_male: number | null; virtual_female: number | null })[]>();
+    .returns<
+      (DbMeeting & {
+        description: string | null;
+        template_id: string | null;
+        virtual_male: number | null;
+        virtual_female: number | null;
+      })[]
+    >();
+
+  // 관리자 강제 숨김 / 종료 시간이 지난 모임은 손님 화면에서 제외
+  const events = (allEvents ?? []).filter((e) =>
+    isMeetingVisible({ date: e.date, time: e.time, endTime: e.end_time, hidden: e.hidden ?? false }),
+  );
 
   // 손님에게 보이는 인원 = 실구매(취소 제외) + 가상구매 (성별 포함)
-  const ids = (events ?? []).map((e) => e.id);
+  const ids = events.map((e) => e.id);
   const realCount = new Map<string, { total: number; male: number; female: number }>();
   if (ids.length > 0) {
     const { data: orders } = await admin
@@ -81,6 +100,29 @@ export async function getRegionWithEvents(slug: string): Promise<Region | null> 
     });
   }
 
+  // 옵션 가격 (상품별) — 카드에 "최저가~" 표기용
+  const templateIds = [...new Set(events.map((e) => e.template_id).filter(Boolean))] as string[];
+  const priceByTemplate = new Map<string, { min: number; varies: boolean }>();
+  if (templateIds.length > 0) {
+    const { data: opts } = await admin
+      .from("template_options")
+      .select("template_id,price")
+      .in("template_id", templateIds)
+      .returns<{ template_id: string; price: number }[]>();
+    const grouped = new Map<string, number[]>();
+    (opts ?? []).forEach((o) => {
+      const arr = grouped.get(o.template_id) ?? [];
+      arr.push(o.price);
+      grouped.set(o.template_id, arr);
+    });
+    grouped.forEach((prices, tid) => {
+      priceByTemplate.set(tid, {
+        min: Math.min(...prices),
+        varies: new Set(prices).size > 1,
+      });
+    });
+  }
+
   return {
     slug: region.slug as RegionSlug,
     name: region.name,
@@ -88,14 +130,18 @@ export async function getRegionWithEvents(slug: string): Promise<Region | null> 
     area: region.area,
     accent: region.accent,
     homeImage: `/regions/${region.slug}.webp`,
-    events: (events ?? []).map((e) => {
+    events: events.map((e) => {
       const real = realCount.get(e.id) ?? { total: 0, male: 0, female: 0 };
       const vm = e.virtual_male ?? 0;
       const vf = e.virtual_female ?? 0;
+      const opt = e.template_id ? priceByTemplate.get(e.template_id) : undefined;
       return {
         ...mapEvent({ ...e, joined: real.total + vm + vf }),
         male: real.male + vm,
         female: real.female + vf,
+        description: e.description ?? undefined,
+        priceFrom: opt?.min ?? e.price,
+        priceVaries: opt?.varies ?? false,
       };
     }),
   };
@@ -220,6 +266,8 @@ export type MeetingLite = {
   price: number;
   date: string;
   time: string;
+  end_time: string | null;
+  hidden: boolean;
   template_id: string | null;
   closed_male: boolean;
   closed_female: boolean;
@@ -237,6 +285,8 @@ export async function getMeetingLite(id: string): Promise<MeetingLite | null> {
           price: event.price,
           date: event.date,
           time: event.time,
+          end_time: null,
+          hidden: false,
           template_id: null,
           closed_male: false,
           closed_female: false,
@@ -247,7 +297,7 @@ export async function getMeetingLite(id: string): Promise<MeetingLite | null> {
   }
   const { data } = await admin
     .from("meetings")
-    .select("id,title,price,date,time,template_id,closed_male,closed_female")
+    .select("id,title,price,date,time,end_time,hidden,template_id,closed_male,closed_female")
     .eq("id", id)
     .single<MeetingLite>();
   return data ?? null;
