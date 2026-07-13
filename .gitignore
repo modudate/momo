@@ -32,3 +32,10 @@ next-env.d.ts
 .env*.bak
 .env*.backup
 .env.*.local
+
+# 인증서/개인키 — 절대 커밋 금지
+*.pem
+*.key
+*.p12
+*.pfx
+KCP_AUTH_*
