@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ImageIcon, ChevronRight, ThumbsUp, ThumbsDown } from "lucide-react";
+import { ImageIcon, ChevronRight } from "lucide-react";
 import SiteFooter from "@/components/SiteFooter";
+import { DEFAULT_REVIEW_SLIDES, type ReviewSlide } from "@/data/faq";
 
 // 상단 메뉴
 const menu = [
@@ -66,31 +67,31 @@ const DEFAULT_HERO: Hero = {
   images: [],
 };
 
-type ReviewCard = { id: string; author: string; content: string; up: number; down: number };
-
 export default function HomePage() {
   const [sections, setSections] = useState<HomeSection[]>(fallbackSections);
   const [hero, setHero] = useState<Hero>(DEFAULT_HERO);
   const [slide, setSlide] = useState(0);
-  const [reviews, setReviews] = useState<ReviewCard[]>([]);
+  const [slides, setSlides] = useState<ReviewSlide[]>(DEFAULT_REVIEW_SLIDES);
+  const [rvIdx, setRvIdx] = useState(0);
 
   useEffect(() => {
     let active = true;
     fetch("/api/home/content")
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { hero: Hero | null; sections: HomeSection[] } | null) => {
-        if (!active || !data) return;
-        if (data.hero) setHero({ ...DEFAULT_HERO, ...data.hero });
-        if (data.sections?.length > 0) setSections(data.sections);
-      })
-      .catch(() => {});
-
-    // 최신 후기 3건
-    fetch("/api/reviews?limit=3")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { reviews: ReviewCard[] } | null) => {
-        if (active && data?.reviews) setReviews(data.reviews);
-      })
+      .then(
+        (
+          data: {
+            hero: Hero | null;
+            sections: HomeSection[];
+            reviewSlides?: ReviewSlide[];
+          } | null,
+        ) => {
+          if (!active || !data) return;
+          if (data.hero) setHero({ ...DEFAULT_HERO, ...data.hero });
+          if (data.sections?.length > 0) setSections(data.sections);
+          if (data.reviewSlides?.length) setSlides(data.reviewSlides);
+        },
+      )
       .catch(() => {});
 
     return () => {
@@ -104,6 +105,14 @@ export default function HomePage() {
     const t = setInterval(() => setSlide((s) => (s + 1) % hero.images.length), 4000);
     return () => clearInterval(t);
   }, [hero.images.length]);
+
+  // 후기 자동 슬라이드 (5초)
+  useEffect(() => {
+    if (slides.length < 2) return;
+    setRvIdx((i) => (i < slides.length ? i : 0));
+    const t = setInterval(() => setRvIdx((i) => (i + 1) % slides.length), 5000);
+    return () => clearInterval(t);
+  }, [slides.length]);
 
   return (
     <div className="app-main home">
@@ -162,38 +171,50 @@ export default function HomePage() {
         </Section>
       ))}
 
-      {/* 후기 */}
+      {/* 후기 — 관리자가 넣은 사진·문구 슬라이드 */}
       <Section title="👀 모두의 모임 후기" more="/reviews">
         <article className="home-review">
-          {/* 고정 대표 이미지 (후기는 글만 작성) */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/moso-hero.webp" alt="" loading="lazy" decoding="async" className="home-review-ph home-review-img" />
-          <div className="home-review-body">
-            {reviews.length === 0 ? (
-              <>
-                <span className="home-card-label">첫 후기를 기다려요</span>
-                <p className="home-review-title">모임 후기를 남겨주세요</p>
-                <p className="home-review-text">
-                  모임에 참여하신 분들만 후기를 남길 수 있어요. 마이페이지 신청내역에서 후기를 작성해 주세요.
-                </p>
-              </>
-            ) : (
-              <>
-                <span className="home-card-label">{reviews[0].author}님의 후기</span>
-                <p className="home-review-title">모두의 모임에 다녀왔어요</p>
-                <p className="home-review-text">{reviews[0].content}</p>
-                <p className="home-review-react">
-                  <ThumbsUp size={13} /> {reviews[0].up}
-                  <ThumbsDown size={13} /> {reviews[0].down}
-                </p>
-              </>
-            )}
-          </div>
-          <div className="home-dots">
-            {(reviews.length > 0 ? reviews : [0, 0, 0]).map((_, i) => (
-              <i key={i} className={i === 0 ? "on" : ""} />
+          <div className="home-review-stage">
+            {slides.map((s, i) => (
+              <div
+                key={i}
+                className={`home-review-slide ${i === rvIdx ? "is-on" : ""}`}
+                aria-hidden={i !== rvIdx}
+              >
+                {s.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={s.image}
+                    alt=""
+                    loading={i === 0 ? "eager" : "lazy"}
+                    decoding="async"
+                    className="home-review-ph home-review-img"
+                  />
+                ) : (
+                  <Ph className="home-review-ph" />
+                )}
+                <div className="home-review-body">
+                  {s.label && <span className="home-card-label">{s.label}</span>}
+                  {s.title && <p className="home-review-title">{s.title}</p>}
+                  {s.text && <p className="home-review-text">{s.text}</p>}
+                </div>
+              </div>
             ))}
           </div>
+
+          {slides.length > 1 && (
+            <div className="home-dots">
+              {slides.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  aria-label={`${i + 1}번 후기`}
+                  className={i === rvIdx ? "on" : ""}
+                  onClick={() => setRvIdx(i)}
+                />
+              ))}
+            </div>
+          )}
         </article>
       </Section>
 

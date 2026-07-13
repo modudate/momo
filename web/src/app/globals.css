@@ -1562,17 +1562,19 @@ body {
   object-fit: cover;
   display: block;
 }
-.home-review-react {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 10px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-tertiary);
+/* 후기 슬라이드 (관리자에서 사진·문구 관리) */
+.home-review-stage {
+  display: grid;
 }
-.home-review-react svg:nth-of-type(2) {
-  margin-left: 10px;
+.home-review-slide {
+  grid-area: 1 / 1;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s ease;
+}
+.home-review-slide.is-on {
+  opacity: 1;
+  visibility: visible;
 }
 .home-review-body {
   padding: 16px 2px 4px;
@@ -1596,13 +1598,21 @@ body {
   justify-content: center;
   padding: 12px 0 14px;
 }
-.home-dots i {
+.home-dots i,
+.home-dots button {
   width: 6px;
   height: 6px;
+  padding: 0;
+  border: none;
   border-radius: var(--radius-full);
   background: var(--border-strong);
+  transition: width 0.25s;
 }
-.home-dots i.on {
+.home-dots button {
+  cursor: pointer;
+}
+.home-dots i.on,
+.home-dots button.on {
   width: 16px;
   background: var(--accent-primary);
 }
@@ -4029,6 +4039,204 @@ select.auth-input {
   color: var(--text-secondary);
   white-space: pre-line;
   word-break: keep-all;
+}
+
+/* ============================================================
+   관리자 — 자주 묻는 질문 / 홈 후기 슬라이드 / 월 선택
+   ============================================================ */
+.faq-admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.faq-admin-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--adm-border);
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+.faq-admin-no {
+  flex-shrink: 0;
+  width: 34px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--accent-primary-light);
+  color: var(--accent-gradient-end);
+  font-size: 12px;
+  font-weight: 800;
+}
+.faq-admin-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.faq-admin-tools {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* 홈 후기 슬라이드 편집 */
+.rvs-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.rvs-tab {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1px solid var(--border-strong);
+  background: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.rvs-tab.is-on {
+  border-color: var(--accent-primary);
+  background: var(--accent-primary);
+  color: #fff;
+}
+.rvs-editor {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+.rvs-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rvs-preview {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--adm-border);
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+.rvs-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.rvs-noimg {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.rvs-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+@media (max-width: 900px) {
+  .rvs-editor {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 매출분석 — 월 선택 */
+.mon-card {
+  margin-bottom: 20px;
+}
+.mon-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--adm-border);
+}
+.mon-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mon-nav button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  border: 1px solid var(--border-strong);
+  background: #fff;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.mon-nav button:hover {
+  background: var(--bg-surface);
+}
+.mon-label {
+  min-width: 108px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+.mon-now {
+  width: auto !important;
+  padding: 0 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--accent-primary) !important;
+  border-color: var(--accent-primary) !important;
+}
+.mon-figures {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+}
+.mon-figures > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mon-cap {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+}
+.mon-figures b {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+.mon-rev {
+  font-size: 19px !important;
+  letter-spacing: -0.02em;
+}
+.mon-up {
+  color: #0ca678 !important;
+}
+.mon-down {
+  color: #e5484d !important;
+}
+.mon-flat {
+  color: var(--text-muted) !important;
 }
 
 /* 관리자 — 홈 카테고리 폼 */

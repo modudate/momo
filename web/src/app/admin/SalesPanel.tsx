@@ -13,6 +13,8 @@ import {
   CreditCard,
   Ban,
   Copy,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { regions, formatKRW } from "@/data/moim-data";
 import { useBackdropClose } from "@/lib/useBackdropClose";
@@ -42,6 +44,15 @@ type SalesRow = {
 type SeriesPoint = { key: string; label: string; revenue: number };
 type Analytics = {
   today: string;
+  selected: {
+    month: string; // YYYY-MM
+    label: string; // 2026년 7월
+    revenue: number;
+    count: number;
+    changePct: number | null;
+    days: SeriesPoint[];
+    isCurrentMonth: boolean;
+  };
   cards: {
     today: { revenue: number; changePct: number | null };
     week: { revenue: number; changePct: number | null };
@@ -103,9 +114,10 @@ export default function SalesPanel({ flash, mode }: { flash: (m: string) => void
   const today = useMemo(() => todayKST(), []);
   const view = mode; // 대시보드=판매 내역, 판매=매출 분석
 
-  // 매출 분석
+  // 매출 분석 (month = 조회할 달, 비우면 이번 달)
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [anLoading, setAnLoading] = useState(true);
+  const [anMonth, setAnMonth] = useState(""); // YYYY-MM
 
   // 판매 내역
   const [rows, setRows] = useState<SalesRow[]>([]);
@@ -122,10 +134,12 @@ export default function SalesPanel({ flash, mode }: { flash: (m: string) => void
 
   const loadAnalytics = useCallback(async () => {
     setAnLoading(true);
-    const res = await fetch("/api/admin/sales/analytics");
+    const res = await fetch(
+      `/api/admin/sales/analytics${anMonth ? `?month=${anMonth}` : ""}`,
+    );
     if (res.ok) setAnalytics(await res.json());
     setAnLoading(false);
-  }, []);
+  }, [anMonth]);
 
   const loadList = useCallback(async () => {
     setListLoading(true);
@@ -228,7 +242,11 @@ export default function SalesPanel({ flash, mode }: { flash: (m: string) => void
             <div className="admin-empty">매출 데이터를 불러오는 중…</div>
           </div>
         ) : (
-          <Analytics data={analytics} />
+          <Analytics
+            data={analytics}
+            onMonth={(m) => setAnMonth(m)}
+            onThisMonth={() => setAnMonth("")}
+          />
         )
       ) : (
         <>
@@ -432,7 +450,30 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
 }
 
 /* ---------- 매출 분석 ---------- */
-function Analytics({ data }: { data: Analytics }) {
+// YYYY-MM ± n개월
+function shiftMonth(ym: string, n: number) {
+  let y = Number(ym.slice(0, 4));
+  let m = Number(ym.slice(5, 7)) + n;
+  while (m <= 0) {
+    m += 12;
+    y -= 1;
+  }
+  while (m > 12) {
+    m -= 12;
+    y += 1;
+  }
+  return `${y}-${String(m).padStart(2, "0")}`;
+}
+
+function Analytics({
+  data,
+  onMonth,
+  onThisMonth,
+}: {
+  data: Analytics;
+  onMonth: (m: string) => void;
+  onThisMonth: () => void;
+}) {
   const [period, setPeriod] = useState<Period>("monthly");
   const series = data.series[period];
   const maxRev = Math.max(1, ...series.map((p) => p.revenue));
@@ -442,8 +483,79 @@ function Analytics({ data }: { data: Analytics }) {
   const periodTitle =
     period === "daily" ? "일별 (최근 30일)" : period === "weekly" ? "주별 (최근 12주)" : "월별 (최근 12개월)";
 
+  const sel = data.selected;
+  const selMax = Math.max(1, ...sel.days.map((d) => d.revenue));
+
   return (
     <div className="sales-analytics">
+      {/* 월 선택 — 지난 달도 조회 */}
+      <div className="admin-card mon-card">
+        <div className="mon-head">
+          <div className="mon-nav">
+            <button
+              type="button"
+              onClick={() => onMonth(shiftMonth(sel.month, -1))}
+              title="이전 달"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <span className="mon-label">{sel.label}</span>
+            <button
+              type="button"
+              onClick={() => onMonth(shiftMonth(sel.month, 1))}
+              title="다음 달"
+            >
+              <ChevronRight size={18} />
+            </button>
+            {!sel.isCurrentMonth && (
+              <button type="button" className="mon-now" onClick={onThisMonth}>
+                이번 달
+              </button>
+            )}
+          </div>
+
+          <div className="mon-figures">
+            <div>
+              <span className="mon-cap">매출</span>
+              <b className="mon-rev">{formatKRW(sel.revenue)}</b>
+            </div>
+            <div>
+              <span className="mon-cap">건수</span>
+              <b>{sel.count.toLocaleString()}건</b>
+            </div>
+            <div>
+              <span className="mon-cap">전월 대비</span>
+              {sel.changePct === null ? (
+                <b className="mon-flat">–</b>
+              ) : (
+                <b className={sel.changePct >= 0 ? "mon-up" : "mon-down"}>
+                  {sel.changePct >= 0 ? "▲" : "▼"} {Math.abs(sel.changePct)}%
+                </b>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 선택한 달 일별 매출 */}
+        <div className="bchart bchart-daily" style={{ padding: "0 18px 18px" }}>
+          {sel.days.map((p, i) => {
+            const day = Number(p.key.slice(8, 10));
+            const showLabel = day === 1 || day % 5 === 0 || i === sel.days.length - 1;
+            return (
+              <div className="bchart-col" key={p.key} title={`${p.key} · ${formatKRW(p.revenue)}`}>
+                <div className="bchart-track">
+                  <div
+                    className={`bchart-bar ${p.revenue === 0 ? "is-zero" : ""} ${p.key === data.today ? "is-today" : ""}`}
+                    style={{ height: `${Math.max(2, (p.revenue / selMax) * 100)}%` }}
+                  />
+                </div>
+                <span className="bchart-label">{showLabel ? day : ""}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* 비교 카드: 오늘 / 이번 주 / 이번 달 / 연도 */}
       <div className="cmp-grid">
         <CmpCard label="오늘" value={data.cards.today.revenue} pct={data.cards.today.changePct} vs="어제 대비" />

@@ -48,8 +48,17 @@ function changePct(cur: number, prev: number): number | null {
   return Math.round(((cur - prev) / prev) * 1000) / 10;
 }
 
+// 그 달의 마지막 날 (YYYY-MM-DD)
+function monthEnd(ym: string) {
+  const y = Number(ym.slice(0, 4));
+  const m = Number(ym.slice(5, 7));
+  const nextStart = m === 12 ? `${y + 1}-01-01` : `${y}-${pad(m + 1)}-01`;
+  return addDays(nextStart, -1);
+}
+
 // 매출 분석 — 결제완료+대기(취소·실패 제외), 시점은 모임(행사) 날짜 기준
-export async function GET() {
+//   GET /api/admin/sales/analytics?month=YYYY-MM  (월 선택 — 없으면 이번 달)
+export async function GET(req: Request) {
   if (!(await isAdminAllowed())) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
@@ -61,6 +70,10 @@ export async function GET() {
   const today = todayKST();
   const curYear = Number(today.slice(0, 4));
   const curMon = Number(today.slice(5, 7));
+
+  // 조회할 달 (기본: 이번 달)
+  const monthParam = new URL(req.url).searchParams.get("month") ?? "";
+  const selMonth = /^\d{4}-\d{2}$/.test(monthParam) ? monthParam : today.slice(0, 7);
 
   const { data: all } = await admin
     .from("orders")
@@ -83,6 +96,7 @@ export async function GET() {
   );
 
   const byDay = new Map<string, number>();
+  const cntByDay = new Map<string, number>(); // 선택한 달 건수 집계용
   const byRegion = new Map<string, { revenue: number; count: number }>();
   const byGender = new Map<string, { revenue: number; count: number }>();
   let totalRevenue = 0;
@@ -93,6 +107,7 @@ export async function GET() {
     const amt = o.amount ?? 0;
     totalRevenue += amt;
     byDay.set(m.date, (byDay.get(m.date) ?? 0) + amt);
+    cntByDay.set(m.date, (cntByDay.get(m.date) ?? 0) + 1);
 
     const regionName = m.regions?.name ?? m.region_slug ?? "-";
     const rr = byRegion.get(regionName) ?? { revenue: 0, count: 0 };
@@ -170,8 +185,39 @@ export async function GET() {
   }
   const avg12 = Math.round(monthly.reduce((s, m) => s + m.revenue, 0) / 12);
 
+  // ---- 선택한 달 (월 이동으로 지난 달도 조회) ----
+  const selStart = `${selMonth}-01`;
+  const selEnd = monthEnd(selMonth);
+  const selY = Number(selMonth.slice(0, 4));
+  const selM = Number(selMonth.slice(5, 7));
+
+  // 전월 (증감 비교용)
+  const pM = selM === 1 ? 12 : selM - 1;
+  const pY = selM === 1 ? selY - 1 : selY;
+  const prevStart = `${pY}-${pad(pM)}-01`;
+  const prevRev = sumRange(prevStart, monthEnd(prevStart.slice(0, 7)));
+
+  const selDays: { key: string; label: string; revenue: number }[] = [];
+  let selRev = 0;
+  let selCnt = 0;
+  for (let d = selStart; d <= selEnd; d = addDays(d, 1)) {
+    const rev = byDay.get(d) ?? 0;
+    selRev += rev;
+    selCnt += cntByDay.get(d) ?? 0;
+    selDays.push({ key: d, label: `${Number(d.slice(8, 10))}`, revenue: rev });
+  }
+
   return NextResponse.json({
     today,
+    selected: {
+      month: selMonth,
+      label: `${selY}년 ${selM}월`,
+      revenue: selRev,
+      count: selCnt,
+      changePct: changePct(selRev, prevRev),
+      days: selDays,
+      isCurrentMonth: selMonth === today.slice(0, 7),
+    },
     cards: {
       today: { revenue: todayRev, changePct: changePct(todayRev, yesterdayRev) },
       week: { revenue: thisWeekRev, changePct: changePct(thisWeekRev, lastWeekRev) },

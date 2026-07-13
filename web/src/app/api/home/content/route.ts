@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
+import { DEFAULT_REVIEW_SLIDES, type ReviewSlide } from "@/data/faq";
 
 type DbTpl = {
   id: string;
@@ -45,7 +46,7 @@ export async function GET() {
   const admin = getAdminClient();
   if (!admin) return NextResponse.json({ hero: null, sections: [] });
 
-  const [{ data: tpls }, { data: secs }, { data: heroRow }] = await Promise.all([
+  const [{ data: tpls }, { data: secs }, { data: heroRow }, { data: reviewRow }] = await Promise.all([
     admin
       .from("moim_templates")
       .select(
@@ -60,6 +61,11 @@ export async function GET() {
       .order("sort", { ascending: true })
       .returns<DbSection[]>(),
     admin.from("site_content").select("value").eq("key", "hero").maybeSingle<{ value: HeroContent }>(),
+    admin
+      .from("site_content")
+      .select("value")
+      .eq("key", "home-reviews")
+      .maybeSingle<{ value: { slides?: ReviewSlide[] } }>(),
   ]);
 
   const rows = tpls ?? [];
@@ -72,9 +78,14 @@ export async function GET() {
     }))
     .filter((s) => s.cards.length > 0);
 
+  // 홈 후기 슬라이드 (관리자가 직접 넣은 사진·문구)
+  const slides = reviewRow?.value?.slides;
+  const reviewSlides =
+    Array.isArray(slides) && slides.length > 0 ? slides : DEFAULT_REVIEW_SLIDES;
+
   // CDN 캐시 60초 + 백그라운드 갱신 (관리자 변경은 최대 1분 내 반영)
   return NextResponse.json(
-    { hero: heroRow?.value ?? null, sections },
+    { hero: heroRow?.value ?? null, sections, reviewSlides },
     { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=600" } },
   );
 }

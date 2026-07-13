@@ -23,6 +23,7 @@ import {
   PanelLeftOpen,
   MessageSquare,
   LayoutList,
+  HelpCircle,
 } from "lucide-react";
 import { regions, formatKRW } from "@/data/moim-data";
 import { CATEGORIES, categoryLabel, AGE_GROUP_PRESETS } from "@/data/taxonomy";
@@ -33,6 +34,8 @@ import UsersPanel from "./UsersPanel";
 import HomeBannerPanel from "./HomeBannerPanel";
 import SectionsPanel, { type HomeSection } from "./SectionsPanel";
 import ReviewsPanel from "./ReviewsPanel";
+import HomeReviewsPanel from "./HomeReviewsPanel";
+import FaqPanel from "./FaqPanel";
 import { uploadImage } from "@/lib/uploadImage";
 
 type AdminTab =
@@ -44,6 +47,7 @@ type AdminTab =
   | "reviews"
   | "banner"
   | "sections"
+  | "faq"
   | "push";
 
 type Template = {
@@ -96,6 +100,7 @@ const NAV: { key: AdminTab; label: string; icon: typeof Package }[] = [
   { key: "reviews", label: "후기 관리", icon: MessageSquare },
   { key: "banner", label: "홈 배너", icon: ImageIcon },
   { key: "sections", label: "홈 카테고리", icon: LayoutList },
+  { key: "faq", label: "자주 묻는 질문", icon: HelpCircle },
   { key: "push", label: "푸시 알림", icon: Bell },
 ];
 
@@ -105,9 +110,10 @@ const TAB_META: Record<AdminTab, { title: string; sub: string }> = {
   templates: { title: "예약 상품", sub: "예약 상품(모임 프로그램) 관리 · 복제 · 일정 생성" },
   sales: { title: "매출 분석", sub: "일·주·월 매출 비교 대시보드" },
   users: { title: "유저 관리", sub: "회원 목록 + 블랙리스트 관리" },
-  reviews: { title: "후기 관리", sub: "회원이 남긴 후기 확인 · 부적절한 글 삭제" },
+  reviews: { title: "후기 관리", sub: "홈에 보이는 후기 슬라이드 + 회원이 남긴 후기 관리" },
   banner: { title: "홈 배너", sub: "메인 상단 슬라이드 이미지·문구 관리" },
   sections: { title: "홈 카테고리", sub: "홈에 노출되는 모임 섹션 추가·이름수정·순서" },
+  faq: { title: "자주 묻는 질문", sub: "FAQ 페이지의 질문·답변 추가·수정·순서" },
   push: { title: "푸시 알림", sub: "전체 구독자에게 발송" },
 };
 
@@ -394,14 +400,22 @@ export default function AdminPage() {
           {/* 유저 관리 */}
           {tab === "users" && <UsersPanel flash={flash} />}
 
-          {/* 후기 관리 */}
-          {tab === "reviews" && <ReviewsPanel flash={flash} />}
+          {/* 후기 — 홈 슬라이드 + 회원 후기 */}
+          {tab === "reviews" && (
+            <div className="flex flex-col gap-5">
+              <HomeReviewsPanel flash={flash} />
+              <ReviewsPanel flash={flash} />
+            </div>
+          )}
 
           {/* 홈 배너 */}
           {tab === "banner" && <HomeBannerPanel flash={flash} />}
 
           {/* 홈 카테고리 */}
           {tab === "sections" && <SectionsPanel flash={flash} />}
+
+          {/* 자주 묻는 질문 */}
+          {tab === "faq" && <FaqPanel flash={flash} />}
 
           {/* 푸시 */}
           {tab === "push" && (
