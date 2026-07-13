@@ -13,7 +13,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "kcp_not_configured" }, { status: 503 });
   }
 
-  let body: { ordr_no?: string; enc_data?: string; enc_info?: string; pay_type?: string };
+  let body: {
+    ordr_no?: string;
+    enc_data?: string;
+    enc_info?: string;
+    pay_type?: string;
+    tran_cd?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -28,6 +34,7 @@ export async function POST(req: Request) {
     encData: body.enc_data,
     encInfo: body.enc_info,
     payType: body.pay_type || "PACA",
+    tranCd: body.tran_cd || undefined, // 결제창이 내려준 값
     userId: user.id,
   });
 

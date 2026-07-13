@@ -2,6 +2,7 @@ import { getAdminClient } from "@/lib/supabase/admin";
 import { approve } from "./client";
 import { ordrNoToGroupId } from "./order-no";
 import { notifyAdmins } from "@/lib/notify";
+import { payLog } from "./log";
 
 // 결제 승인 공통 처리 — PC(결제창 콜백)와 모바일(Ret_URL 콜백)이 같이 쓴다.
 //
@@ -20,6 +21,8 @@ export async function approveGroupOrder(params: {
   encData: string;
   encInfo: string;
   payType: string;
+  /** 결제창이 내려준 거래코드 — 임의로 정하면 안 된다 */
+  tranCd?: string;
   /** 세션이 있는 경로(PC)에서만 전달 — 본인 주문인지 확인용 */
   userId?: string | null;
 }): Promise<ApproveOutcome> {
@@ -60,13 +63,24 @@ export async function approveGroupOrder(params: {
   }
 
   const pendings = orders.filter((o) => o.status === "pending");
-  if (pendings.length === 0) return { ok: false, error: "order_not_pending", meetingId };
+  if (pendings.length === 0) {
+    await payLog("error", params.ordrNo, {
+      이유: "order_not_pending",
+      상태: orders.map((o) => o.status),
+    });
+    return { ok: false, error: "order_not_pending", meetingId };
+  }
 
   // 자리 홀드가 만료됐으면 승인하지 않는다 (다른 사람이 자리를 가져갔을 수 있음)
   const expired = pendings.some(
     (o) => o.expires_at && new Date(o.expires_at).getTime() < Date.now(),
   );
   if (expired) {
+    await payLog("error", params.ordrNo, {
+      이유: "hold_expired",
+      만료시각: pendings.map((o) => o.expires_at),
+      지금: new Date().toISOString(),
+    });
     await admin.from("orders").update({ status: "failed" }).eq("group_id", groupId).eq("status", "pending");
     return { ok: false, error: "hold_expired", meetingId };
   }
@@ -80,6 +94,21 @@ export async function approveGroupOrder(params: {
     pay_type: params.payType,
     enc_data: params.encData,
     enc_info: params.encInfo,
+    tran_cd: params.tranCd,
+  });
+
+  // 승인 요청/응답 기록 (실패 원인 진단용)
+  await payLog("approve_res", params.ordrNo, {
+    보낸금액: total,
+    pay_type: params.payType,
+    tran_cd: params.tranCd || "(기본값)",
+    enc_data길이: params.encData.length,
+    enc_info길이: params.encInfo.length,
+    res_cd: result.res_cd,
+    res_msg: result.res_msg,
+    tno: result.tno,
+    승인금액: result.amount,
+    raw: result.raw,
   });
 
   if (!result.ok) {

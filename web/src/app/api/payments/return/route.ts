@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { approveGroupOrder } from "@/lib/kcp/approve-order";
 import { ordrNoToGroupId } from "@/lib/kcp/order-no";
+import { payLog, maskFields } from "@/lib/kcp/log";
 
 // 모바일 결제창 인증 결과 수신 (Ret_URL)
 //  · KCP 가 이 주소로 폼(application/x-www-form-urlencoded) POST 를 보낸다.
@@ -14,6 +15,20 @@ export const dynamic = "force-dynamic";
 function redirect(origin: string, path: string) {
   // 303: POST → GET 으로 바꿔서 이동 (새로고침 시 재전송 방지)
   return NextResponse.redirect(`${origin}${path}`, 303);
+}
+
+// 결제창의 pay_method(CARD 등) → 승인 API 의 pay_type(PACA 등)
+//  이미 P 로 시작하는 4자리면 승인용 코드이므로 그대로 쓴다.
+function toPayType(payMethod: string): string {
+  const m = payMethod.trim().toUpperCase();
+  if (/^P[A-Z]{3}$/.test(m)) return m;
+  const MAP: Record<string, string> = {
+    CARD: "PACA", // 신용카드
+    BANK: "PABK", // 계좌이체
+    VCNT: "PAVC", // 가상계좌
+    MOBX: "PAMC", // 휴대폰
+  };
+  return MAP[m] ?? "PACA";
 }
 
 export async function POST(req: Request) {
@@ -32,6 +47,13 @@ export async function POST(req: Request) {
   const resCd = get("res_cd");
   const encData = get("enc_data");
   const encInfo = get("enc_info");
+
+  // KCP 가 실제로 보낸 값 전부 기록 (실패 원인 진단용)
+  const all: Record<string, unknown> = {};
+  form.forEach((v, k) => {
+    all[k] = typeof v === "string" ? v : "(file)";
+  });
+  await payLog("ret_url", ordrNo || null, maskFields(all));
 
   const groupId = ordrNoToGroupId(ordrNo);
   const admin = getAdminClient();
@@ -66,7 +88,9 @@ export async function POST(req: Request) {
     ordrNo,
     encData,
     encInfo,
-    payType: "PACA", // 신용카드 (결제창에서 카드만 사용)
+    payType: toPayType(get("pay_method")),
+    // 거래코드는 결제창이 내려준 값을 그대로 (임의 지정 금지)
+    tranCd: get("tran_cd") || undefined,
   });
 
   if (!outcome.ok) {

@@ -2257,6 +2257,14 @@ body {
 body.with-bottom-nav .app-main {
   padding-bottom: calc(62px + env(safe-area-inset-bottom));
 }
+/* 단, 푸터가 있는 화면은 그 여백을 푸터 "안쪽"으로 넣는다.
+   안 그러면 푸터 아래에 빈 띠가 생긴다 — 푸터 밑에는 공간이 없어야 한다. */
+body.with-bottom-nav .app-main:has(.site-footer-wrap) {
+  padding-bottom: 0;
+}
+body.with-bottom-nav .site-footer {
+  padding-bottom: calc(36px + 62px + env(safe-area-inset-bottom));
+}
 
 /* ============================================================
    하단 고정 구매 바

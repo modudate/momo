@@ -57,12 +57,15 @@ async function post(url: string, body: Record<string, unknown>): Promise<KcpResu
 
 // ---------- 결제 승인 ----------
 // 결제창 인증 결과(enc_data, enc_info)를 받아 최종 승인
+//  ⚠️ KCP 규정: "결제창이 내려준 값을 그대로 사용" — tran_cd 를 임의로 정하면 안 된다.
+//     결제창이 준 tran_cd 가 있으면 그것을 쓰고, 없을 때만 기본값을 쓴다.
 export async function approve(params: {
   ordr_no: string; // 우리 주문번호
   ordr_mony: number; // 결제 금액
-  pay_type: string; // PACA(신용카드) 등 — 결제창이 알려준 값
+  pay_type: string; // PACA(신용카드) 등
   enc_data: string;
   enc_info: string;
+  tran_cd?: string; // 결제창이 내려준 값
 }): Promise<KcpResult> {
   if (!isKcpConfigured) {
     return { ok: false, res_cd: "9998", res_msg: "KCP 키 미설정", raw: {} };
@@ -70,7 +73,7 @@ export async function approve(params: {
   return post(KCP_API.approve, {
     site_cd: KCP.siteCd,
     kcp_cert_info: certInfo(),
-    tran_cd: "00100000", // 승인 요청 코드 (고정)
+    tran_cd: params.tran_cd || "00100000",
     ordr_no: params.ordr_no,
     ordr_mony: String(params.ordr_mony),
     pay_type: params.pay_type,
