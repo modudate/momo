@@ -34,28 +34,58 @@ declare global {
   interface Window {
     KCP_Pay_Execute_Web?: (form: HTMLFormElement) => void;
     m_Completepayment?: (formOrJson: unknown, closeEvent?: () => void) => void;
+    KCP_JQUERY?: { blockUI?: unknown };
   }
 }
 
 let scriptPromise: Promise<void> | null = null;
 
 // kcp_spay_hub.js 는 "로더"일 뿐이다.
-// 이 스크립트가 onload 된 뒤에도 실제 결제창 함수(KCP_Pay_Execute_Web)는 아직 없고,
-// 로더가 비동기로 붙이는 kcp_spay_cross_hub.js 등이 다 로드돼야 정의된다.
-// → onload 만 믿고 호출하면 함수가 없어서 결제창이 안 뜬다. 반드시 함수가 생길 때까지 기다릴 것.
+// 로더는 아래 5개를 전부 async=true 로 붙인다 → 로드 순서가 보장되지 않는다.
+//   js/kcp_jquery-1.8.0.js        → KCP_JQUERY
+//   plugin/kcp_spay_cross_hub.js  → KCP_Pay_Execute_Web
+//   js/kcp_jquery.blockUI.js      → KCP_JQUERY.blockUI
+//   js/ClientDataHandler.js       → chkAvailablePostMessage, Completepayment_SPAY, GetField ...
+//   js/npayUtils.js               → kcpShowEdgeGuide
+//
+// KCP_Pay_Execute_Web 은 실행 중에 나머지 파일의 함수들을 부른다.
+// → KCP_Pay_Execute_Web 하나만 기다리면, cross_hub 가 먼저 도착했을 때
+//   "chkAvailablePostMessage is not defined" 로 결제창이 안 뜬다. (실제 발생)
+// → 필요한 전역이 "전부" 생길 때까지 기다린다.
+const REQUIRED_GLOBALS = [
+  "KCP_Pay_Execute_Web", // kcp_spay_cross_hub.js
+  "chkAvailablePostMessage", // ClientDataHandler.js
+  "Completepayment_SPAY", // ClientDataHandler.js
+  "GetField", // ClientDataHandler.js
+  "kcpShowEdgeGuide", // npayUtils.js
+] as const;
+
+function missingGlobals(): string[] {
+  const w = window as unknown as Record<string, unknown>;
+  const missing: string[] = REQUIRED_GLOBALS.filter((k) => typeof w[k] !== "function");
+  // blockUI 는 KCP 전용 jQuery 에 플러그인으로 붙는다
+  if (typeof window.KCP_JQUERY?.blockUI !== "function") missing.push("KCP_JQUERY.blockUI");
+  return missing;
+}
+
 function waitForKcp(timeoutMs = 15000): Promise<void> {
   return new Promise((resolve, reject) => {
     const started = Date.now();
     const tick = () => {
-      if (typeof window.KCP_Pay_Execute_Web === "function") {
+      const missing = missingGlobals();
+      if (missing.length === 0) {
         resolve();
         return;
       }
       if (Date.now() - started > timeoutMs) {
-        reject(new Error("결제 모듈 로딩이 지연되고 있어요. 잠시 후 다시 시도해 주세요."));
+        reject(
+          new Error(
+            `결제 모듈 로딩이 지연되고 있어요. 잠시 후 다시 시도해 주세요. (미로딩: ${missing.join(", ")})`,
+          ),
+        );
         return;
       }
-      window.setTimeout(tick, 100);
+      window.setTimeout(tick, 50);
     };
     tick();
   });
@@ -63,7 +93,7 @@ function waitForKcp(timeoutMs = 15000): Promise<void> {
 
 function loadScript(): Promise<void> {
   if (typeof window === "undefined") return Promise.reject(new Error("no window"));
-  if (typeof window.KCP_Pay_Execute_Web === "function") return Promise.resolve();
+  if (missingGlobals().length === 0) return Promise.resolve();
   if (scriptPromise) return scriptPromise;
 
   scriptPromise = new Promise<void>((resolve, reject) => {
