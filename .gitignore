@@ -27,3 +27,8 @@ Thumbs.db
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# env 백업/임시본도 절대 커밋 금지
+.env*.bak
+.env*.backup
+.env.*.local
