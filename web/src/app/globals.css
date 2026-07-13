@@ -3762,6 +3762,33 @@ select.auth-input {
   display: block;
 }
 
+/* 관리자 헤더 — 결제 상태 뱃지 */
+.pay-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.pay-badge.is-live {
+  background: #fdecec;
+  color: #d64545;
+  border: 1px solid #f5c2c2;
+}
+.pay-badge.is-test {
+  background: #fff5d6;
+  color: #b8860b;
+  border: 1px solid #f0dca0;
+}
+.pay-badge.is-off {
+  background: var(--bg-surface);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-subtle);
+}
+
 /* 결제창 진행 중 오버레이 */
 .pay-overlay {
   position: fixed;

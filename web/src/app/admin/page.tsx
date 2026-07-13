@@ -24,6 +24,7 @@ import {
   MessageSquare,
   LayoutList,
   HelpCircle,
+  CreditCard,
 } from "lucide-react";
 import { regions, formatKRW } from "@/data/moim-data";
 import { CATEGORIES, categoryLabel, AGE_GROUP_PRESETS } from "@/data/taxonomy";
@@ -72,6 +73,14 @@ function genderLabel(gender: string | null) {
 }
 
 type Stats = { templates: number; upcomingSessions: number; orders: number; subscribers: number };
+
+// 결제(KCP) 설정 상태 — 값 자체는 내려오지 않고 "켜짐/꺼짐"만
+type KcpStatus = {
+  configured: boolean;
+  mode: string; // "운영(실결제)" | "테스트"
+  siteCd: string | null;
+  missing: string[];
+};
 
 const firstRegion = (regions[0]?.slug ?? "gangnam") as string;
 
@@ -143,6 +152,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats>({ templates: 0, upcomingSessions: 0, orders: 0, subscribers: 0 });
   const [templates, setTemplates] = useState<Template[]>([]);
   const [sections, setSections] = useState<HomeSection[]>([]); // 홈 카테고리 (상품 폼 선택지)
+  const [kcp, setKcp] = useState<KcpStatus | null>(null); // 결제 상태
 
   const [templateModal, setTemplateModal] = useState<{ open: boolean; editId: string | null }>({
     open: false,
@@ -170,6 +180,10 @@ export default function AdminPage() {
     const res = await fetch("/api/admin/sections");
     if (res.ok) setSections((await res.json()).sections);
   }, []);
+  const loadKcp = useCallback(async () => {
+    const res = await fetch("/api/admin/kcp-status");
+    if (res.ok) setKcp(await res.json());
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -183,8 +197,9 @@ export default function AdminPage() {
       loadStats();
       loadTemplates();
       loadSections();
+      loadKcp();
     })();
-  }, [loadStats, loadTemplates, loadSections]);
+  }, [loadStats, loadTemplates, loadSections, loadKcp]);
 
   // ---- 상품(템플릿) ----
   const openTemplateCreate = () => {
@@ -326,7 +341,27 @@ export default function AdminPage() {
             <h1 className="admin-top-title">{meta.title}</h1>
             <p className="admin-top-sub">{meta.sub}</p>
           </div>
-          {primaryAction}
+          <div className="flex items-center gap-3">
+            {/* 결제 상태 — 실결제가 켜져 있는지 항상 보이게 */}
+            {kcp && (
+              <span
+                className={`pay-badge ${kcp.configured ? (kcp.mode.includes("운영") ? "is-live" : "is-test") : "is-off"}`}
+                title={
+                  kcp.configured
+                    ? `KCP ${kcp.siteCd} · ${kcp.mode}`
+                    : `결제 미설정 (누락: ${kcp.missing.join(", ")})`
+                }
+              >
+                <CreditCard size={13} />
+                {kcp.configured
+                  ? kcp.mode.includes("운영")
+                    ? "실결제 켜짐"
+                    : "결제 테스트모드"
+                  : "결제 꺼짐"}
+              </span>
+            )}
+            {primaryAction}
+          </div>
         </header>
 
         <div className="admin-wrap">
