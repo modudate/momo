@@ -221,6 +221,13 @@ body {
   margin-top: auto; /* 내용이 짧아도 푸터를 페이지 하단으로 */
   padding-top: 40px; /* 본문과 푸터 사이 최소 여백 */
 }
+/* 푸터 밑에는 공간이 없다.
+   .app-main 의 하단 여백(pb-10 / pb-28 유틸리티 포함)은 푸터가 마지막 요소이므로
+   전부 "푸터 아래 빈 띠"로만 보인다 → 푸터가 있으면 그 여백을 없앤다.
+   (globals.css 는 레이어 밖이라 @layer utilities 의 pb-* 보다 우선한다) */
+.app-main:has(.site-footer-wrap) {
+  padding-bottom: 0;
+}
 .site-footer {
   border-top: 1px solid var(--border-subtle);
   background: var(--bg-surface);
@@ -2256,11 +2263,6 @@ body {
 /* 바가 떠있는 화면은 본문 하단 여백 확보 */
 body.with-bottom-nav .app-main {
   padding-bottom: calc(62px + env(safe-area-inset-bottom));
-}
-/* 단, 푸터가 있는 화면은 그 여백을 푸터 "안쪽"으로 넣는다.
-   안 그러면 푸터 아래에 빈 띠가 생긴다 — 푸터 밑에는 공간이 없어야 한다. */
-body.with-bottom-nav .app-main:has(.site-footer-wrap) {
-  padding-bottom: 0;
 }
 body.with-bottom-nav .site-footer {
   padding-bottom: calc(36px + 62px + env(safe-area-inset-bottom));
