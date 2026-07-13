@@ -39,22 +39,50 @@ declare global {
 
 let scriptPromise: Promise<void> | null = null;
 
+// kcp_spay_hub.js 는 "로더"일 뿐이다.
+// 이 스크립트가 onload 된 뒤에도 실제 결제창 함수(KCP_Pay_Execute_Web)는 아직 없고,
+// 로더가 비동기로 붙이는 kcp_spay_cross_hub.js 등이 다 로드돼야 정의된다.
+// → onload 만 믿고 호출하면 함수가 없어서 결제창이 안 뜬다. 반드시 함수가 생길 때까지 기다릴 것.
+function waitForKcp(timeoutMs = 15000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const started = Date.now();
+    const tick = () => {
+      if (typeof window.KCP_Pay_Execute_Web === "function") {
+        resolve();
+        return;
+      }
+      if (Date.now() - started > timeoutMs) {
+        reject(new Error("결제 모듈 로딩이 지연되고 있어요. 잠시 후 다시 시도해 주세요."));
+        return;
+      }
+      window.setTimeout(tick, 100);
+    };
+    tick();
+  });
+}
+
 function loadScript(): Promise<void> {
   if (typeof window === "undefined") return Promise.reject(new Error("no window"));
-  if (window.KCP_Pay_Execute_Web) return Promise.resolve();
+  if (typeof window.KCP_Pay_Execute_Web === "function") return Promise.resolve();
   if (scriptPromise) return scriptPromise;
 
   scriptPromise = new Promise<void>((resolve, reject) => {
     const s = document.createElement("script");
     s.src = SCRIPT_URL;
     s.async = true;
-    s.onload = () => resolve();
+    // 로더가 붙인 하위 스크립트까지 다 뜰 때까지 기다린다
+    s.onload = () => waitForKcp().then(resolve, reject);
     s.onerror = () => {
       scriptPromise = null;
       reject(new Error("결제 모듈을 불러오지 못했어요."));
     };
-    document.head.appendChild(s);
+    // 로더가 document.body 에 하위 스크립트를 붙이므로 body 가 있어야 함
+    (document.body ?? document.head).appendChild(s);
+  }).catch((e) => {
+    scriptPromise = null; // 실패하면 다음 시도에서 다시 로드
+    throw e;
   });
+
   return scriptPromise;
 }
 
@@ -69,7 +97,12 @@ function field(form: HTMLFormElement, name: string, value = "") {
 
 // 결제창을 띄우고, 승인까지 끝난 결과를 돌려준다
 export async function openPayment(params: PayParams): Promise<PayResult> {
-  await loadScript();
+  try {
+    await loadScript();
+  } catch (e) {
+    // 모듈 로딩 실패 → 오버레이가 계속 떠 있지 않도록 실패로 끝낸다
+    return { status: "failed", message: (e as Error).message };
+  }
 
   return new Promise<PayResult>((resolve) => {
     const form = document.createElement("form");
@@ -168,11 +201,17 @@ export async function openPayment(params: PayParams): Promise<PayResult> {
       }
     };
 
-    try {
-      window.KCP_Pay_Execute_Web?.(form);
-    } catch {
+    if (typeof window.KCP_Pay_Execute_Web !== "function") {
       cleanup();
-      resolve({ status: "failed", message: "결제창을 띄우지 못했어요." });
+      resolve({ status: "failed", message: "결제 모듈이 준비되지 않았어요. 새로고침 후 다시 시도해 주세요." });
+      return;
+    }
+
+    try {
+      window.KCP_Pay_Execute_Web(form);
+    } catch (e) {
+      cleanup();
+      resolve({ status: "failed", message: `결제창을 띄우지 못했어요. (${(e as Error).message})` });
     }
   });
 }
