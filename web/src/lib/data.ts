@@ -7,6 +7,7 @@ import {
 } from "@/data/moim-data";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { isMeetingVisible } from "@/lib/booking";
+import { holdsSeat, SEAT_STATUSES } from "@/lib/orders";
 
 type DbRegion = {
   slug: string;
@@ -81,23 +82,25 @@ export async function getRegionWithEvents(slug: string): Promise<Region | null> 
     isMeetingVisible({ date: e.date, time: e.time, endTime: e.end_time, hidden: e.hidden ?? false }),
   );
 
-  // 손님에게 보이는 인원 = 실구매(취소 제외) + 가상구매 (성별 포함)
+  // 손님에게 보이는 인원 = 자리를 잡고 있는 신청(결제완료 + 미만료 결제대기) + 가상구매
   const ids = events.map((e) => e.id);
   const realCount = new Map<string, { total: number; male: number; female: number }>();
   if (ids.length > 0) {
     const { data: orders } = await admin
       .from("orders")
-      .select("meeting_id,gender")
+      .select("meeting_id,gender,status,expires_at")
       .in("meeting_id", ids)
-      .neq("status", "cancelled")
-      .returns<{ meeting_id: string; gender: string | null }[]>();
-    (orders ?? []).forEach((o) => {
-      const cur = realCount.get(o.meeting_id) ?? { total: 0, male: 0, female: 0 };
-      cur.total += 1;
-      if (o.gender === "male") cur.male += 1;
-      else if (o.gender === "female") cur.female += 1;
-      realCount.set(o.meeting_id, cur);
-    });
+      .in("status", SEAT_STATUSES)
+      .returns<{ meeting_id: string; gender: string | null; status: string; expires_at: string | null }[]>();
+    (orders ?? [])
+      .filter((o) => holdsSeat(o))
+      .forEach((o) => {
+        const cur = realCount.get(o.meeting_id) ?? { total: 0, male: 0, female: 0 };
+        cur.total += 1;
+        if (o.gender === "male") cur.male += 1;
+        else if (o.gender === "female") cur.female += 1;
+        realCount.set(o.meeting_id, cur);
+      });
   }
 
   // 옵션 가격 + 상품 정보 (상세 소개 · 카드 문구 · 주황 라벨)
@@ -211,21 +214,23 @@ export async function getMeetingCounts(meetingId: string): Promise<MeetingCounts
       .maybeSingle<{ capacity: number; virtual_male: number | null; virtual_female: number | null }>(),
     admin
       .from("orders")
-      .select("gender,status")
+      .select("gender,status,expires_at")
       .eq("meeting_id", meetingId)
-      .neq("status", "cancelled")
-      .returns<{ gender: string | null; status: string }[]>(),
+      .in("status", SEAT_STATUSES)
+      .returns<{ gender: string | null; status: string; expires_at: string | null }[]>(),
   ]);
   if (!meeting) return null;
 
   let male = meeting.virtual_male ?? 0;
   let female = meeting.virtual_female ?? 0;
   let total = male + female;
-  (orders ?? []).forEach((o) => {
-    total += 1;
-    if (o.gender === "male") male += 1;
-    else if (o.gender === "female") female += 1;
-  });
+  (orders ?? [])
+    .filter((o) => holdsSeat(o))
+    .forEach((o) => {
+      total += 1;
+      if (o.gender === "male") male += 1;
+      else if (o.gender === "female") female += 1;
+    });
 
   return { capacity: meeting.capacity, total, male, female };
 }
@@ -369,17 +374,19 @@ export async function getMeetingOptions(
     .returns<MeetingOption[]>();
   if (!options || options.length === 0) return [];
 
-  // 옵션별 신청 수 (취소 제외)
+  // 옵션별 신청 수 (자리를 잡고 있는 건만)
   const { data: orders } = await admin
     .from("orders")
-    .select("option_id")
+    .select("option_id,status,expires_at")
     .eq("meeting_id", meetingId)
-    .neq("status", "cancelled")
-    .returns<{ option_id: string | null }[]>();
+    .in("status", SEAT_STATUSES)
+    .returns<{ option_id: string | null; status: string; expires_at: string | null }[]>();
   const countByOption = new Map<string, number>();
-  (orders ?? []).forEach((order) => {
-    if (order.option_id) countByOption.set(order.option_id, (countByOption.get(order.option_id) ?? 0) + 1);
-  });
+  (orders ?? [])
+    .filter((o) => holdsSeat(o))
+    .forEach((order) => {
+      if (order.option_id) countByOption.set(order.option_id, (countByOption.get(order.option_id) ?? 0) + 1);
+    });
 
   return options.map((option) => ({ ...option, joined: countByOption.get(option.id) ?? 0 }));
 }

@@ -9,6 +9,10 @@ import { useUser } from "@/components/auth/useUser";
 import { isBookingOpen } from "@/lib/booking";
 import { REFUND_POLICY } from "@/lib/refund";
 import { formatKRW } from "@/data/moim-data";
+import { openPayment, isPaymentEnabled } from "@/lib/kcp/pay-window";
+
+// 결제 연동 여부 (사이트코드가 있으면 결제 모드)
+const PAYMENT_ON = isPaymentEnabled;
 
 type MeetingOption = {
   id: string;
@@ -75,6 +79,7 @@ export default function MeetingDetailPage() {
   const [includeSelf, setIncludeSelf] = useState(false); // 참가자 1 = 본인
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paying, setPaying] = useState(false); // 결제창 진행 중
   const [ordered, setOrdered] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -247,8 +252,47 @@ export default function MeetingDetailPage() {
         );
         return;
       }
-      setOrdered(true);
+
+      const order = (await response.json()) as {
+        amount: number;
+        orderName: string;
+        payment:
+          | { required: false }
+          | { required: true; ordrNo: string; buyerName: string; buyerTel: string; holdMinutes: number };
+      };
+
+      // 결제 미연동 상태 → 예전처럼 신청 접수로 끝
+      if (!order.payment.required) {
+        setOrdered(true);
+        setSheetOpen(false);
+        return;
+      }
+
+      // 결제창 → 승인
       setSheetOpen(false);
+      setPaying(true);
+      const result = await openPayment({
+        ordrNo: order.payment.ordrNo,
+        amount: order.amount,
+        goodName: order.orderName,
+        buyerName: order.payment.buyerName,
+        buyerTel: order.payment.buyerTel,
+        buyerEmail: currentUser?.email ?? "",
+      });
+      setPaying(false);
+
+      if (result.status === "paid") {
+        setOrdered(true);
+        return;
+      }
+      if (result.status === "cancelled") {
+        setErrorMessage(
+          `결제를 취소했어요. 자리는 ${order.payment.holdMinutes}분간 잡아뒀으니 다시 시도하실 수 있어요.`,
+        );
+      } else {
+        setErrorMessage(result.message);
+      }
+      setSheetOpen(true);
     } catch {
       setErrorMessage("신청에 실패했어요. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -335,7 +379,7 @@ export default function MeetingDetailPage() {
         </div>
         {ordered ? (
           <span className="inline-flex items-center gap-1.5 px-5 h-[52px] rounded-[var(--radius-md)] bg-[var(--bg-surface)] text-[15px] font-bold text-[var(--accent-secondary)]">
-            <Check size={18} /> 신청 접수됨
+            <Check size={18} /> {PAYMENT_ON ? "결제 완료" : "신청 접수됨"}
           </span>
         ) : (
           <button
@@ -355,6 +399,17 @@ export default function MeetingDetailPage() {
       </div>
       {errorMessage && !sheetOpen && (
         <p className="page-content pb-4 text-[13px] text-[#FF4D4F] text-center">{errorMessage}</p>
+      )}
+
+      {/* 결제창 진행 중 — 뒤에서 조작 못 하게 덮어둠 */}
+      {paying && (
+        <div className="pay-overlay">
+          <div className="pay-overlay-box">
+            <CreditCard size={22} />
+            <p>결제창에서 결제를 진행해 주세요</p>
+            <span>창을 닫으면 신청이 취소돼요</span>
+          </div>
+        </div>
       )}
 
 
@@ -534,7 +589,9 @@ export default function MeetingDetailPage() {
                     이전
                   </button>
                   <button type="button" className="tds-btn-primary" style={{ flex: 2 }} onClick={submitOrder} disabled={isSubmitting}>
-                    {isSubmitting ? "신청 중…" : `${formatKRW(totalPrice)} 신청하기`}
+                    {isSubmitting
+                      ? "처리 중…"
+                      : `${formatKRW(totalPrice)} ${PAYMENT_ON ? "결제하기" : "신청하기"}`}
                   </button>
                 </div>
               </>

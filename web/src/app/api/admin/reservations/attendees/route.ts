@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdminAllowed } from "@/lib/admin";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { getBlacklistSet, normPhone } from "@/lib/blacklist";
+import { holdsSeat, SEAT_STATUSES } from "@/lib/orders";
 
 type DbOrder = {
   id: string;
@@ -13,6 +14,7 @@ type DbOrder = {
   amount: number;
   buyer_name: string | null;
   buyer_phone: string | null;
+  expires_at: string | null;
   user_id: string | null;
   created_at: string;
 };
@@ -59,19 +61,20 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "meeting_not_found" }, { status: 404 });
   }
 
-  // 주문(신청) 목록 — 취소 제외
-  const { data: orders } = await supabaseAdmin
+  // 주문(신청) 목록 — 자리를 잡고 있는 건만 (만료된 미결제·실패 제외)
+  const { data: ordersRaw } = await supabaseAdmin
     .from("orders")
     .select(
-      "id,status,attended,gender,option_label,amount,buyer_name,buyer_phone,birth_year,user_id,created_at",
+      "id,status,attended,gender,option_label,amount,buyer_name,buyer_phone,birth_year,expires_at,user_id,created_at",
     )
     .eq("meeting_id", meetingId)
-    .neq("status", "cancelled")
+    .in("status", SEAT_STATUSES)
     .order("created_at", { ascending: true })
     .returns<DbOrder[]>();
+  const orders = (ordersRaw ?? []).filter((o) => holdsSeat(o));
 
   // 회원 프로필 매핑 (orders.user_id → profiles.id)
-  const userIds = [...new Set((orders ?? []).map((o) => o.user_id).filter(Boolean))] as string[];
+  const userIds = [...new Set(orders.map((o) => o.user_id).filter(Boolean))] as string[];
   const profileMap = new Map<string, DbProfile>();
   if (userIds.length > 0) {
     const { data: profiles } = await supabaseAdmin
@@ -84,7 +87,7 @@ export async function GET(req: Request) {
 
   const blacklist = await getBlacklistSet();
 
-  const attendees = (orders ?? []).map((o) => {
+  const attendees = orders.map((o) => {
     const p = o.user_id ? profileMap.get(o.user_id) : undefined;
     const phone = p?.phone ?? o.buyer_phone ?? null;
     return {

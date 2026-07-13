@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdminAllowed } from "@/lib/admin";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { regions } from "@/data/moim-data";
+import { holdsSeat, SEAT_STATUSES } from "@/lib/orders";
 
 const VALID_REGIONS = new Set<string>(regions.map((r) => r.slug));
 
@@ -83,22 +84,29 @@ export async function GET(req: Request) {
   if (ids.length > 0) {
     const { data: orders } = await supabaseAdmin
       .from("orders")
-      .select("meeting_id,amount,gender,status")
+      .select("meeting_id,amount,gender,status,expires_at")
       .in("meeting_id", ids)
-      .neq("status", "cancelled")
+      .in("status", SEAT_STATUSES)
       .returns<
-        { meeting_id: string; amount: number; gender: string | null; status: string }[]
+        {
+          meeting_id: string;
+          amount: number;
+          gender: string | null;
+          status: string;
+          expires_at: string | null;
+        }[]
       >();
-    // 결제 연동(KCP) 전까지는 모든 주문이 pending → 취소 제외 합계를 "예상 매출"로 집계.
-    // 결제 도입 후에는 실매출은 status='paid'만 집계하도록 분리 필요.
-    (orders ?? []).forEach((o) => {
-      const cur = agg.get(o.meeting_id) ?? { joined: 0, male: 0, female: 0, revenue: 0 };
-      cur.joined += 1;
-      cur.revenue += o.amount ?? 0;
-      if (o.gender === "male") cur.male += 1;
-      else if (o.gender === "female") cur.female += 1;
-      agg.set(o.meeting_id, cur);
-    });
+    // 자리를 잡고 있는 신청만 집계 (결제완료 + 아직 안 만료된 결제대기)
+    (orders ?? [])
+      .filter((o) => holdsSeat(o))
+      .forEach((o) => {
+        const cur = agg.get(o.meeting_id) ?? { joined: 0, male: 0, female: 0, revenue: 0 };
+        cur.joined += 1;
+        cur.revenue += o.amount ?? 0;
+        if (o.gender === "male") cur.male += 1;
+        else if (o.gender === "female") cur.female += 1;
+        agg.set(o.meeting_id, cur);
+      });
   }
 
   const items = meetings.map((m) => {

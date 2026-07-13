@@ -4,6 +4,9 @@ import { getServerUser } from "@/lib/supabase/server";
 import { getMeetingLite, getMeetingOptions } from "@/lib/data";
 import { isBookingOpen, isMeetingVisible } from "@/lib/booking";
 import { notifyAdmins } from "@/lib/notify";
+import { isKcpConfigured } from "@/lib/kcp/config";
+import { groupIdToOrdrNo } from "@/lib/kcp/order-no";
+import { SEAT_HOLD_MINUTES } from "@/lib/orders";
 
 type Ticket = {
   optionId?: string;
@@ -161,19 +164,32 @@ export async function POST(req: Request) {
 
   const created = (data ?? []) as { id: string; group_id: string | null }[];
   const total = rows.reduce((s, r) => s + r.amount, 0);
+  const groupId = created[0]?.group_id ?? null;
 
-  // 관리자 알림 (실패해도 주문에 영향 없음)
-  const firstName = tickets[0]?.name ?? "신청자";
-  void notifyAdmins(
-    "🎉 새 신청 접수",
-    `${meeting.title} · ${rows.length}매 · ${firstName}${rows.length > 1 ? ` 외 ${rows.length - 1}명` : ""} · ${total.toLocaleString("ko-KR")}원`,
-  );
+  // 결제 미연동 상태에서만 "신청 접수" 알림 (결제 붙으면 결제완료 시점에 알림)
+  if (!isKcpConfigured) {
+    const firstName = tickets[0]?.name ?? "신청자";
+    void notifyAdmins(
+      "🎉 새 신청 접수",
+      `${meeting.title} · ${rows.length}매 · ${firstName}${rows.length > 1 ? ` 외 ${rows.length - 1}명` : ""} · ${total.toLocaleString("ko-KR")}원`,
+    );
+  }
 
   return NextResponse.json({
     orderId: created[0]?.id,
-    groupId: created[0]?.group_id,
+    groupId,
     count: rows.length,
-    amount: total, // 서버 확정 합계
+    amount: total, // 서버 확정 합계 (결제창에 이 금액을 쓴다)
     orderName: `${meeting.title}${rows.length > 1 ? ` 외 ${rows.length - 1}매` : ""}`,
+    // 결제 연동 여부 + 결제창에 넘길 주문번호
+    payment: isKcpConfigured && groupId
+      ? {
+          required: true,
+          ordrNo: groupIdToOrdrNo(groupId),
+          buyerName: tickets[0]?.name ?? "",
+          buyerTel: (tickets[0]?.phone ?? "").replace(/\D/g, ""),
+          holdMinutes: SEAT_HOLD_MINUTES,
+        }
+      : { required: false },
   });
 }

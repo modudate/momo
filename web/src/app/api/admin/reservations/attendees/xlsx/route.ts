@@ -2,6 +2,7 @@ import ExcelJS from "exceljs";
 import { isAdminAllowed } from "@/lib/admin";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { getBlacklistSet, normPhone } from "@/lib/blacklist";
+import { holdsSeat, SEAT_STATUSES } from "@/lib/orders";
 
 // 참석 명단 엑셀 다운로드 (명단.xlsx 양식)
 //   GET /api/admin/reservations/attendees/xlsx?meetingId=xxx
@@ -59,11 +60,14 @@ export async function GET(req: Request) {
     return new Response(JSON.stringify({ error: "meeting_not_found" }), { status: 404 });
   }
 
-  const { data: orders } = await admin
+  // 자리를 잡고 있는 신청만 (만료된 미결제·실패 제외)
+  const { data: ordersRaw } = await admin
     .from("orders")
-    .select("id,status,attended,gender,option_label,buyer_name,buyer_phone,birth_year,user_id,created_at")
+    .select(
+      "id,status,attended,gender,option_label,buyer_name,buyer_phone,birth_year,expires_at,user_id,created_at",
+    )
     .eq("meeting_id", meetingId)
-    .neq("status", "cancelled")
+    .in("status", SEAT_STATUSES)
     .order("created_at", { ascending: true })
     .returns<
       {
@@ -75,11 +79,13 @@ export async function GET(req: Request) {
         buyer_name: string | null;
         buyer_phone: string | null;
         birth_year: number | null;
+        expires_at: string | null;
         user_id: string | null;
       }[]
     >();
+  const orders = (ordersRaw ?? []).filter((o) => holdsSeat(o));
 
-  const userIds = [...new Set((orders ?? []).map((o) => o.user_id).filter(Boolean))] as string[];
+  const userIds = [...new Set(orders.map((o) => o.user_id).filter(Boolean))] as string[];
   const profileMap = new Map<string, { name: string | null; phone: string | null; birth_year: number | null; gender: string | null }>();
   if (userIds.length > 0) {
     const { data: profiles } = await admin
@@ -92,7 +98,7 @@ export async function GET(req: Request) {
 
   const blacklist = await getBlacklistSet();
 
-  const rows: Row[] = (orders ?? []).map((o) => {
+  const rows: Row[] = orders.map((o) => {
     const p = o.user_id ? profileMap.get(o.user_id) : undefined;
     const phone = p?.phone ?? o.buyer_phone ?? null;
     return {
