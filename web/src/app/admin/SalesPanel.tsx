@@ -302,15 +302,16 @@ export default function SalesPanel({ flash, mode }: { flash: (m: string) => void
                     <th>닉네임</th>
                     <th>신청자이름</th>
                     <th>전화번호</th>
+                    <th>출생년도</th>
                     <th>금액</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {listLoading ? (
-                    <tr><td colSpan={10}><div className="admin-empty">불러오는 중…</div></td></tr>
+                    <tr><td colSpan={11}><div className="admin-empty">불러오는 중…</div></td></tr>
                   ) : rows.length === 0 ? (
-                    <tr><td colSpan={10}><div className="admin-empty">조건에 맞는 판매가 없어요.</div></td></tr>
+                    <tr><td colSpan={11}><div className="admin-empty">조건에 맞는 판매가 없어요.</div></td></tr>
                   ) : (
                     rows.map((r) => (
                       <tr key={r.id} className="sales-row" onClick={() => setDetail(r)}>
@@ -340,6 +341,7 @@ export default function SalesPanel({ flash, mode }: { flash: (m: string) => void
                             "-"
                           )}
                         </td>
+                        <td>{r.birth_year ?? "-"}</td>
                         <td className="font-semibold">{formatKRW(r.amount)}</td>
                         <td onClick={(e) => e.stopPropagation()}>
                           {r.status !== "cancelled" && (

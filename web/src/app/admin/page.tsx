@@ -88,10 +88,10 @@ const emptyTemplate = {
 };
 
 const NAV: { key: AdminTab; label: string; icon: typeof Package }[] = [
-  { key: "dashboard", label: "대시보드", icon: LayoutDashboard },
+  { key: "dashboard", label: "판매내역", icon: LayoutDashboard },
   { key: "reservations", label: "예약관리", icon: CalendarRange },
   { key: "templates", label: "예약 상품", icon: Package },
-  { key: "sales", label: "판매", icon: Ticket },
+  { key: "sales", label: "매출분석", icon: Ticket },
   { key: "users", label: "유저 관리", icon: Users },
   { key: "reviews", label: "후기 관리", icon: MessageSquare },
   { key: "banner", label: "홈 배너", icon: ImageIcon },

@@ -12,6 +12,7 @@ type DbOrder = {
   attended: boolean;
   buyer_name: string | null;
   buyer_phone: string | null;
+  birth_year: number | null; // 티켓(참가자)별 출생년도 — 다인 신청 시 각자 다름
   user_id: string | null;
   meeting_id: string;
   created_at: string;
@@ -58,7 +59,7 @@ export async function GET(req: Request) {
   const { data: ordersRaw } = await admin
     .from("orders")
     .select(
-      "id,amount,status,gender,option_label,attended,buyer_name,buyer_phone,user_id,meeting_id,created_at,meetings(title,date,time,region_slug,regions(name))",
+      "id,amount,status,gender,option_label,attended,buyer_name,buyer_phone,birth_year,user_id,meeting_id,created_at,meetings(title,date,time,region_slug,regions(name))",
     )
     .order("created_at", { ascending: false })
     .returns<DbOrder[]>();
@@ -98,7 +99,8 @@ export async function GET(req: Request) {
       member_name: p?.name ?? null,
       name: o.buyer_name ?? p?.name ?? null,
       phone,
-      birth_year: p?.birth_year ?? null,
+      // 신청 시 입력한 참가자 출생년도 우선(다인 신청은 티켓별로 다름), 없으면 회원 프로필
+      birth_year: o.birth_year ?? p?.birth_year ?? null,
       blacklisted: phone ? blacklist.has(normPhone(phone)) : false,
     };
   });
