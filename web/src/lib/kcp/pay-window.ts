@@ -162,7 +162,9 @@ async function openPaymentMobile(params: PayParams): Promise<PayResult> {
   add("buyr_tel2", params.buyerTel);
   add("buyr_mail", params.buyerEmail ?? "");
   add("pay_method", "CARD");
-  add("currency", "WON");
+  // ⚠️ 모바일 결제창은 통화코드가 PC("WON")와 다르다. ISO 숫자코드를 쓴다 (원화 410).
+  //    "WON" 을 보내면 KCP M015(지원되지 않는 통화 코드) 오류.
+  add("currency", "410");
   add("shop_name", "모두의 모임");
   add("escw_used", "N");
   add("res_cd", "");
