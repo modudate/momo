@@ -2264,6 +2264,11 @@ body {
 body.with-bottom-nav .app-main {
   padding-bottom: calc(62px + env(safe-area-inset-bottom));
 }
+/* 푸터가 있으면 바 높이만큼의 여백을 푸터 "안쪽"으로 넣는다.
+   (위의 .app-main:has(...) 규칙보다 명시도가 높은 bottom-nav 규칙을 여기서 다시 눌러준다) */
+body.with-bottom-nav .app-main:has(.site-footer-wrap) {
+  padding-bottom: 0;
+}
 body.with-bottom-nav .site-footer {
   padding-bottom: calc(36px + 62px + env(safe-area-inset-bottom));
 }
