@@ -33,6 +33,7 @@ import UsersPanel from "./UsersPanel";
 import HomeBannerPanel from "./HomeBannerPanel";
 import SectionsPanel, { type HomeSection } from "./SectionsPanel";
 import ReviewsPanel from "./ReviewsPanel";
+import { uploadImage } from "@/lib/uploadImage";
 
 type AdminTab =
   | "dashboard"
@@ -478,19 +479,13 @@ function TemplateModal({
   const backdrop = useBackdropClose(onClose);
   const [uploading, setUploading] = useState(false);
 
-  const uploadImage = async (file: File) => {
+  const pickImage = async (file: File) => {
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("folder", "templates");
-      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      if (res.ok) {
-        const data = (await res.json()) as { url: string };
-        setForm({ ...form, image: data.url });
-      } else {
-        window.alert("이미지 업로드에 실패했어요.");
-      }
+      const url = await uploadImage(file, "templates");
+      setForm({ ...form, image: url });
+    } catch {
+      window.alert("이미지 업로드에 실패했어요.");
     } finally {
       setUploading(false);
     }
@@ -591,7 +586,7 @@ function TemplateModal({
                   disabled={uploading}
                   onChange={(e) => {
                     const f = e.target.files?.[0];
-                    if (f) uploadImage(f);
+                    if (f) pickImage(f);
                     e.target.value = "";
                   }}
                 />

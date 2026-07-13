@@ -12,6 +12,7 @@ import {
   ImagePlus,
   Save,
 } from "lucide-react";
+import { uploadImage } from "@/lib/uploadImage";
 
 type Block =
   | { type: "text"; text: string }
@@ -96,19 +97,16 @@ export default function DetailEditor({
   };
 
   // 여러 장 한 번에 — 업로드 후 커서 위치에 순서대로 삽입
+  //  (브라우저에서 압축 후 버킷으로 직접 업로드하므로 용량 제한 없음)
   const addImages = async (files: File[]) => {
     if (files.length === 0) return;
     setUploading(true);
     try {
       const urls: string[] = [];
       for (const file of files) {
-        const fd = new FormData();
-        fd.append("file", file);
-        fd.append("folder", "detail");
-        const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-        if (res.ok) {
-          urls.push(((await res.json()) as { url: string }).url);
-        } else {
+        try {
+          urls.push(await uploadImage(file, "detail"));
+        } catch {
           flash(`${file.name} 업로드에 실패했어요.`);
         }
       }

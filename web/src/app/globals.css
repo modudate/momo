@@ -2653,9 +2653,14 @@ select.auth-input {
 .moim-view .rich-view {
   padding: 14px var(--page-px) 20px;
 }
+/* 상세 이미지는 좌우 여백 없이 폭 100% (풀블리드).
+   Tailwind preflight의 img{max-width:100%}가 폭을 잘라 오른쪽에 틈이 생기므로 반드시 해제. */
 .moim-view .rich-view img {
   width: calc(100% + var(--page-px) * 2);
+  max-width: none;
+  height: auto; /* 원본 비율 유지 */
   margin-left: calc(var(--page-px) * -1);
+  margin-right: calc(var(--page-px) * -1);
 }
 .moim-apply {
   display: flex;

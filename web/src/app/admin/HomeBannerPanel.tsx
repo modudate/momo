@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Upload, Trash2, ArrowUp, ArrowDown, Save } from "lucide-react";
+import { uploadImage } from "@/lib/uploadImage";
 
 type Hero = {
   badge: string;
@@ -53,18 +54,12 @@ export default function HomeBannerPanel({ flash }: { flash: (m: string) => void 
   const upload = async (file: File) => {
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("folder", "hero");
-      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      if (res.ok) {
-        const data = (await res.json()) as { url: string };
-        const next = { ...hero, images: [...hero.images, data.url] };
-        setHero(next);
-        await save(next); // 업로드 즉시 저장
-      } else {
-        flash("업로드에 실패했어요.");
-      }
+      const url = await uploadImage(file, "hero");
+      const next = { ...hero, images: [...hero.images, url] };
+      setHero(next);
+      await save(next); // 업로드 즉시 저장
+    } catch {
+      flash("업로드에 실패했어요.");
     } finally {
       setUploading(false);
     }
