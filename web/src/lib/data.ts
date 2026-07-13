@@ -100,12 +100,12 @@ export async function getRegionWithEvents(slug: string): Promise<Region | null> 
     });
   }
 
-  // 옵션 가격 + 상품 상세 소개 (상품별)
+  // 옵션 가격 + 상품 정보 (상세 소개 · 카드 문구 · 주황 라벨)
   const templateIds = [...new Set(events.map((e) => e.template_id).filter(Boolean))] as string[];
   const priceByTemplate = new Map<string, { min: number; varies: boolean }>();
-  const descByTemplate = new Map<string, string>();
+  const infoByTemplate = new Map<string, { desc: string; note: string; label: string }>();
   if (templateIds.length > 0) {
-    const [{ data: opts }, { data: tpls }] = await Promise.all([
+    const [{ data: opts }, { data: tpls }, { data: secs }] = await Promise.all([
       admin
         .from("template_options")
         .select("template_id,price")
@@ -113,9 +113,21 @@ export async function getRegionWithEvents(slug: string): Promise<Region | null> 
         .returns<{ template_id: string; price: number }[]>(),
       admin
         .from("moim_templates")
-        .select("id,description")
+        .select("id,description,card_note,home_label,home_section")
         .in("id", templateIds)
-        .returns<{ id: string; description: string | null }[]>(),
+        .returns<
+          {
+            id: string;
+            description: string | null;
+            card_note: string | null;
+            home_label: string | null;
+            home_section: string | null;
+          }[]
+        >(),
+      admin
+        .from("home_sections")
+        .select("key,card_label")
+        .returns<{ key: string; card_label: string }[]>(),
     ]);
 
     const grouped = new Map<string, number[]>();
@@ -131,8 +143,16 @@ export async function getRegionWithEvents(slug: string): Promise<Region | null> 
       });
     });
 
+    // 주황 라벨: 상품에 지정한 라벨 → 없으면 홈 카테고리의 기본 라벨
+    const sectionLabel = new Map((secs ?? []).map((s) => [s.key, s.card_label]));
     (tpls ?? []).forEach((t) => {
-      if (t.description?.trim()) descByTemplate.set(t.id, t.description.trim());
+      infoByTemplate.set(t.id, {
+        desc: t.description?.trim() ?? "",
+        note: t.card_note?.trim() ?? "",
+        label:
+          t.home_label?.trim() ||
+          (t.home_section ? (sectionLabel.get(t.home_section) ?? "") : ""),
+      });
     });
   }
 
@@ -148,14 +168,16 @@ export async function getRegionWithEvents(slug: string): Promise<Region | null> 
       const vm = e.virtual_male ?? 0;
       const vf = e.virtual_female ?? 0;
       const opt = e.template_id ? priceByTemplate.get(e.template_id) : undefined;
+      const info = e.template_id ? infoByTemplate.get(e.template_id) : undefined;
       // 소개 문구 = 일정에 직접 쓴 문구 → 없으면 예약 상품의 "상세 소개"
-      const desc =
-        e.description?.trim() || (e.template_id ? descByTemplate.get(e.template_id) : "") || "";
+      const desc = e.description?.trim() || info?.desc || "";
       return {
         ...mapEvent({ ...e, joined: real.total + vm + vf }),
         male: real.male + vm,
         female: real.female + vf,
         description: desc || undefined,
+        cardNote: info?.note || undefined,
+        label: info?.label || undefined,
         priceFrom: opt?.min ?? e.price,
         priceVaries: opt?.varies ?? false,
       };

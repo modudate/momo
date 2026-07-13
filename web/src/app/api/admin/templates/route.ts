@@ -9,6 +9,7 @@ type TemplateBody = {
   ageGroup?: string;
   title?: string;
   description?: string;
+  cardNote?: string; // 일정 목록 카드의 회색 한 줄
   place?: string;
   price?: number;
   capacity?: number;
@@ -26,6 +27,7 @@ type DbTemplate = {
   age_group: string;
   title: string;
   description: string | null;
+  card_note: string | null;
   place: string | null;
   price: number;
   capacity: number;
@@ -44,7 +46,7 @@ export async function GET() {
   const { data: templates } = await supabaseAdmin
     .from("moim_templates")
     .select(
-      "id,category,region_slug,age_group,title,description,place,price,capacity,image,home_section,home_badge,home_label",
+      "id,category,region_slug,age_group,title,description,card_note,place,price,capacity,image,home_section,home_badge,home_label",
     )
     .order("created_at", { ascending: false });
   return NextResponse.json({ templates: templates ?? [] });
@@ -72,7 +74,7 @@ export async function POST(req: Request) {
   if (body.duplicateFrom) {
     const { data: source } = await supabaseAdmin
       .from("moim_templates")
-      .select("category,region_slug,age_group,title,description,place,price,capacity,image")
+      .select("category,region_slug,age_group,title,description,card_note,place,price,capacity,image")
       .eq("id", body.duplicateFrom)
       .single<DbTemplate>();
     if (source) base = source;
@@ -93,6 +95,7 @@ export async function POST(req: Request) {
     age_group: body.ageGroup ?? base.age_group ?? "전연령",
     title,
     description: body.description ?? base.description ?? null,
+    card_note: body.cardNote?.trim() || base.card_note || null,
     place: body.place ?? base.place ?? null,
     price: body.price ?? base.price ?? 0,
     capacity: body.capacity ?? base.capacity ?? 16,
@@ -133,6 +136,7 @@ export async function PATCH(req: Request) {
       age_group: body.ageGroup,
       title: body.title,
       description: body.description ?? null,
+      card_note: body.cardNote?.trim() || null,
       place: body.place ?? null,
       price: body.price,
       capacity: body.capacity,

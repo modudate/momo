@@ -1888,72 +1888,143 @@ body {
 /* ============================================================
    신청 페이지 — 컴팩트 모임 카드 (좌 이미지 · 우 정보 · 하단 버튼)
    ============================================================ */
+/* 목록 헤더 (7월 10일 모임 · 모임 2개) */
+.evt-head-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.evt-head-count {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.evt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+/* 한 줄 = 왼쪽 시간 + 카드 */
+.evt-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
 .evt-card {
+  flex: 1;
+  min-width: 0;
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
-  padding: 12px;
+  padding: 12px 13px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.evt-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  text-decoration: none;
+}
+.evt-head:active {
+  opacity: 0.85;
+}
+.evt-thumb {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  object-fit: cover;
+  display: block;
+}
+.evt-hinfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.evt-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 주황 라벨 (시그니처 / 프리미엄 …) */
+.evt-label {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent-primary);
+}
+/* 가격 (우측 상단) */
+.evt-pricebox {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+.evt-pricebox b {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+}
+.evt-pricebox span {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+/* 아래 줄 — 남/여 · 정원 바 · 신청 */
+.evt-foot {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.evt-top {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  text-decoration: none;
-}
-.evt-top:active {
-  opacity: 0.85;
-}
-.evt-thumb {
-  width: 88px;
-  height: 88px;
-  flex-shrink: 0;
-  border-radius: 12px;
-  object-fit: cover;
-  display: block;
-}
-.evt-info {
+.evt-fmeta {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
-.evt-title {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--accent-primary);
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.evt-meta {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.evt-gender {
   font-size: 13px;
   color: var(--text-secondary);
+}
+.evt-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.evt-progress .evt-bar {
+  flex: 1;
   min-width: 0;
 }
-.evt-mtxt {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-.evt-meta svg {
-  color: var(--text-tertiary);
+.evt-count {
   flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  white-space: nowrap;
 }
-.evt-price {
-  color: var(--text-primary);
-  font-weight: 800;
+.evt-count.is-hot {
+  color: var(--accent-gradient-end);
 }
 .evt-apply {
   display: flex;
@@ -1986,8 +2057,9 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 11px 16px;
-  border-radius: 11px;
+  min-width: 68px;
+  padding: 10px 16px;
+  border-radius: 12px;
   background: var(--accent-primary);
   color: #fff;
   font-size: 14px;
@@ -1998,6 +2070,12 @@ body {
 }
 .evt-apply-side:active {
   transform: scale(0.97);
+}
+/* 마감된 모임 — 버튼 자리를 회색 표기로 */
+.evt-apply-side.is-off {
+  background: var(--bg-surface);
+  color: var(--text-tertiary);
+  font-weight: 700;
 }
 .evt-male {
   color: #3182f6;
@@ -2013,50 +2091,35 @@ body {
   cursor: default;
 }
 .evt-card.is-closed .evt-thumb,
-.evt-card.is-closed .evt-time,
-.evt-card.is-closed .evt-info {
+.evt-card.is-closed .evt-hinfo,
+.evt-card.is-closed .evt-pricebox,
+.evt-card.is-closed .evt-fmeta {
   opacity: 0.55;
 }
-.evt-closed-chip {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--bg-surface);
-  color: var(--text-tertiary);
-  font-size: 11px;
-  font-weight: 700;
-  vertical-align: 2px;
-  opacity: 1;
-}
 
-/* ── 카드 왼쪽 시간 · 소개 문구 · 정원 바 · 마감임박 ── */
+/* ── 카드 왼쪽 시간 (19:50 / 오후) ── */
 .evt-time {
   flex-shrink: 0;
-  width: 58px;
+  width: 52px;
+  padding-top: 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 1px;
-  padding: 2px 0;
-  border-right: 1px solid var(--border-subtle);
 }
 .evt-time b {
-  font-size: 16px;
+  font-size: 15.5px;
   font-weight: 800;
   color: var(--text-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 .evt-time span {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-tertiary);
 }
-.evt-title {
-  white-space: normal; /* 마감 칩까지 함께 줄바꿈 허용 */
-  word-break: keep-all;
-}
+
+/* 카드 회색 한 줄 (상품 설정의 "카드 문구") */
 .evt-desc {
   font-size: 12.5px;
   color: var(--text-tertiary);
@@ -2064,6 +2127,8 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* 정원 채움 바 */
 .evt-bar {
   height: 6px;
   border-radius: 999px;
@@ -2079,18 +2144,6 @@ body {
 }
 .evt-bar i.is-hot {
   background: linear-gradient(90deg, var(--accent-primary), var(--accent-gradient-end));
-}
-.evt-soon-chip {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--accent-primary-light);
-  color: var(--accent-gradient-end);
-  font-size: 11px;
-  font-weight: 800;
-  vertical-align: 2px;
-  white-space: nowrap;
 }
 
 /* ============================================================

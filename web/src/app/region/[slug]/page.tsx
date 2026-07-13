@@ -6,7 +6,6 @@ import { useParams, notFound } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
-  Users,
   CalendarDays,
   MapPin,
   X,
@@ -306,17 +305,22 @@ export default function RegionPage() {
 
       {/* 선택한 날짜의 모임 목록 */}
       <section className="page-content pt-5 pb-2">
-        <h3 className="tds-title-md mb-3">
-          {selected
-            ? `${Number(selected.slice(5, 7))}월 ${Number(selected.slice(8, 10))}일 모임`
-            : "날짜를 선택하세요"}
-        </h3>
+        <div className="evt-head-row">
+          <h3 className="tds-title-md">
+            {selected
+              ? `${Number(selected.slice(5, 7))}월 ${Number(selected.slice(8, 10))}일 모임`
+              : "날짜를 선택하세요"}
+          </h3>
+          {dayEvents.length > 0 && (
+            <span className="evt-head-count">모임 {dayEvents.length}개</span>
+          )}
+        </div>
 
         {selected && dayEvents.length === 0 && (
           <p className="tds-caption py-6 text-center">이 날은 예정된 모임이 없어요.</p>
         )}
 
-        <div className="flex flex-col gap-3">
+        <div className="evt-list">
           {dayEvents.map((e) => {
             const open = isBookingOpen(e.date, e.time);
             const full = e.capacity - e.joined <= 0; // 정원 마감 (사라지지 않고 "전원 마감" 표기)
@@ -325,58 +329,67 @@ export default function RegionPage() {
             const ratio = e.capacity > 0 ? e.joined / e.capacity : 0;
             const almostFull = !full && ratio >= CLOSING_SOON_RATIO;
             const priceFrom = e.priceFrom ?? e.price;
+            const hour = Number(e.time.slice(0, 2));
+
             return (
-              <article key={e.id} className={`evt-card ${closed ? "is-closed" : ""}`}>
-                <Link href={`/meeting/${e.id}`} className="evt-top">
-                  {/* 시간 — 카드 왼쪽 */}
-                  <div className="evt-time">
-                    <b>{e.time}</b>
-                    {e.endTime && <span>~{e.endTime}</span>}
-                  </div>
+              <div key={e.id} className="evt-row">
+                {/* 시간 — 카드 왼쪽 */}
+                <div className="evt-time">
+                  <b>{e.time}</b>
+                  <span>{hour < 12 ? "오전" : "오후"}</span>
+                </div>
 
-                  <div className="evt-info">
-                    <p className="evt-title">
-                      {e.title}
-                      {full ? (
-                        <span className="evt-closed-chip">전원 마감</span>
-                      ) : !open ? (
-                        <span className="evt-closed-chip">마감</span>
-                      ) : almostFull ? (
-                        <span className="evt-soon-chip">마감임박</span>
-                      ) : null}
-                    </p>
-
-                    {/* 회색 소개 문구 한 줄 (관리자에서 수정) */}
-                    {e.description && <p className="evt-desc">{e.description}</p>}
-
-                    {/* 정원 채움 바 */}
-                    <div className="evt-bar" aria-hidden>
-                      <i
-                        className={almostFull || full ? "is-hot" : ""}
-                        style={{ width: `${Math.min(100, Math.round(ratio * 100))}%` }}
-                      />
+                <article className={`evt-card ${closed ? "is-closed" : ""}`}>
+                  <Link href={`/meeting/${e.id}`} className="evt-head">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={e.image} alt="" loading="lazy" decoding="async" className="evt-thumb" />
+                    <div className="evt-hinfo">
+                      <p className="evt-title">
+                        {e.title}
+                        {e.label && <span className="evt-label">{e.label}</span>}
+                      </p>
+                      {/* 카드 문구 (상품 설정에서 입력) */}
+                      {e.cardNote && <p className="evt-desc">{e.cardNote}</p>}
                     </div>
-
-                    <p className="evt-meta">
-                      <Users size={13} />
-                      <span className="evt-mtxt">
-                        <b className="evt-male">남 {e.male ?? 0}</b> · <b className="evt-female">여 {e.female ?? 0}</b> · {e.joined}/{e.capacity}명
-                      </span>
-                    </p>
-                    <p className="evt-meta">
-                      <b className="evt-price">
+                    <div className="evt-pricebox">
+                      <b>
                         {formatKRW(priceFrom)}
                         {e.priceVaries && "~"}
                       </b>
-                    </p>
-                  </div>
-                </Link>
-                {!closed && (
-                  <Link href={`/meeting/${e.id}`} className="evt-apply-side">
-                    신청하기
+                      <span>1인</span>
+                    </div>
                   </Link>
-                )}
-              </article>
+
+                  <div className="evt-foot">
+                    <div className="evt-fmeta">
+                      <p className="evt-gender">
+                        <b className="evt-male">남 {e.male ?? 0}</b> ·{" "}
+                        <b className="evt-female">여 {e.female ?? 0}</b>
+                      </p>
+                      <div className="evt-progress">
+                        <div className="evt-bar" aria-hidden>
+                          <i
+                            className={almostFull || full ? "is-hot" : ""}
+                            style={{ width: `${Math.min(100, Math.round(ratio * 100))}%` }}
+                          />
+                        </div>
+                        <span className={`evt-count ${almostFull || full ? "is-hot" : ""}`}>
+                          {e.joined}/{e.capacity}명
+                          {full ? " · 전원 마감" : !open ? " · 마감" : almostFull ? " · 마감임박" : ""}
+                        </span>
+                      </div>
+                    </div>
+
+                    {closed ? (
+                      <span className="evt-apply-side is-off">마감</span>
+                    ) : (
+                      <Link href={`/meeting/${e.id}`} className="evt-apply-side">
+                        신청
+                      </Link>
+                    )}
+                  </div>
+                </article>
+              </div>
             );
           })}
         </div>

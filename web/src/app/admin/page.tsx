@@ -52,6 +52,7 @@ type Template = {
   age_group: string;
   title: string;
   description: string | null;
+  card_note: string | null;
   place: string | null;
   price: number;
   capacity: number;
@@ -78,6 +79,7 @@ const emptyTemplate = {
   capacity: 16,
   place: "",
   description: "",
+  cardNote: "",
   image: "",
   homeSection: "",
   homeBadge: "",
@@ -192,6 +194,7 @@ export default function AdminPage() {
       capacity: t.capacity,
       place: t.place ?? "",
       description: t.description ?? "",
+      cardNote: t.card_note ?? "",
       image: t.image ?? "",
       homeSection: t.home_section ?? "",
       homeBadge: t.home_badge ?? "",
@@ -547,6 +550,18 @@ function TemplateModal({
             <input className="admin-input" value={form.place} onChange={(e) => setForm({ ...form, place: e.target.value })} placeholder="예: 강남역 OO카페" />
           </div>
           <div className="admin-field">
+            <label className="admin-label">카드 문구 (일정 목록의 회색 한 줄)</label>
+            <input
+              className="admin-input"
+              value={form.cardNote}
+              onChange={(e) => setForm({ ...form, cardNote: e.target.value })}
+              placeholder="예: 연령대를 선택해 신청하세요"
+            />
+            <p className="admin-hint">
+              지점 일정 목록에서 모임 이름 아래에 회색으로 한 줄 나와요.
+            </p>
+          </div>
+          <div className="admin-field">
             <label className="admin-label">상세 소개</label>
             <textarea
               className="admin-textarea"
@@ -554,9 +569,7 @@ function TemplateModal({
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="신청 페이지의 '모임 소개'에 그대로 나와요. 여기서 고치면 이 상품의 모든 일정에 바로 반영됩니다."
             />
-            <p className="admin-hint">
-              신청 페이지 &apos;모임 소개&apos; + 일정 목록의 회색 한 줄에 쓰여요.
-            </p>
+            <p className="admin-hint">신청 페이지의 &apos;모임 소개&apos; 본문에 쓰여요.</p>
           </div>
 
           {/* 대표사진 업로드 */}

@@ -29,7 +29,9 @@ export type MoimEvent = {
   male?: number; // 남자 신청 (실+가상)
   female?: number; // 여자 신청 (실+가상)
   image: string;
-  description?: string; // 상세 소개 (카드의 회색 한 줄)
+  description?: string; // 상세 소개 (신청 페이지 "모임 소개")
+  cardNote?: string; // 일정 카드의 회색 한 줄 (예: 연령대를 선택해 신청하세요)
+  label?: string; // 카드의 주황 라벨 (예: 시그니처)
   place?: string; // 장소
 };
 
