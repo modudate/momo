@@ -126,7 +126,9 @@ export async function POST(req: Request) {
       capacity: template.capacity,
       joined: 0,
       image: template.image,
-      description: template.description,
+      // 소개 문구는 복사하지 않음 — 상품의 "상세 소개"를 그대로 따라가고,
+      // 필요하면 예약관리에서 일정별로 덮어쓴다 (복사하면 상품 수정이 반영 안 됨)
+      description: null,
       place: template.place,
     }));
 

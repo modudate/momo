@@ -848,13 +848,16 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
                 />
               </div>
               <div className="admin-field">
-                <label className="admin-label">소개 문구 (손님 목록의 회색 한 줄)</label>
+                <label className="admin-label">소개 문구 (이 일정만 다르게 쓸 때)</label>
                 <input
                   className="admin-input"
                   value={mForm.description}
                   onChange={(e) => setMForm({ ...mForm, description: e.target.value })}
-                  placeholder="예: 외모 승인 프리미엄에 도전하는 모임"
+                  placeholder="비우면 예약 상품의 '상세 소개'가 그대로 쓰여요"
                 />
+                <p className="admin-hint">
+                  손님 목록의 회색 한 줄 + 신청 페이지의 &apos;모임 소개&apos;에 쓰여요.
+                </p>
               </div>
               <div className="admin-field-row">
                 <div className="admin-field">

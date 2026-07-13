@@ -305,29 +305,13 @@ export default function MeetingDetailPage() {
 
       <div className="tds-divider mt-5" />
 
+      {/* 모임 소개 — 예약 상품의 "상세 소개" (일정별로 덮어쓸 수 있음).
+          에디터로 만드는 이미지 상세는 홈 노출 모임의 /moim/[id] 전용. */}
       <div className="page-content section-block">
         <h2 className="tds-title-md mb-2">모임 소개</h2>
-        {meeting.detail.length > 0 ? (
-          <div className="detail-view">
-            {meeting.detail.map((block, i) =>
-              block.type === "html" ? (
-                // 게시판식 에디터 저장분 — 관리자 작성 + 저장 시 정리(sanitize)됨
-                <div key={i} className="rich-view" dangerouslySetInnerHTML={{ __html: block.html }} />
-              ) : block.type === "text" ? (
-                <p key={i} className="tds-subtitle whitespace-pre-line">
-                  {block.text}
-                </p>
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={i} src={block.url} alt="" loading="lazy" decoding="async" className="detail-view-img" />
-              ),
-            )}
-          </div>
-        ) : (
-          <p className="tds-subtitle whitespace-pre-line">
-            {meeting.description || "상세 소개가 곧 등록됩니다."}
-          </p>
-        )}
+        <p className="tds-subtitle whitespace-pre-line">
+          {meeting.description || "상세 소개가 곧 등록됩니다."}
+        </p>
       </div>
 
       {/* 취소·환불 규정 */}

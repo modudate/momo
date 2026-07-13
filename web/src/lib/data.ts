@@ -100,15 +100,24 @@ export async function getRegionWithEvents(slug: string): Promise<Region | null> 
     });
   }
 
-  // 옵션 가격 (상품별) — 카드에 "최저가~" 표기용
+  // 옵션 가격 + 상품 상세 소개 (상품별)
   const templateIds = [...new Set(events.map((e) => e.template_id).filter(Boolean))] as string[];
   const priceByTemplate = new Map<string, { min: number; varies: boolean }>();
+  const descByTemplate = new Map<string, string>();
   if (templateIds.length > 0) {
-    const { data: opts } = await admin
-      .from("template_options")
-      .select("template_id,price")
-      .in("template_id", templateIds)
-      .returns<{ template_id: string; price: number }[]>();
+    const [{ data: opts }, { data: tpls }] = await Promise.all([
+      admin
+        .from("template_options")
+        .select("template_id,price")
+        .in("template_id", templateIds)
+        .returns<{ template_id: string; price: number }[]>(),
+      admin
+        .from("moim_templates")
+        .select("id,description")
+        .in("id", templateIds)
+        .returns<{ id: string; description: string | null }[]>(),
+    ]);
+
     const grouped = new Map<string, number[]>();
     (opts ?? []).forEach((o) => {
       const arr = grouped.get(o.template_id) ?? [];
@@ -120,6 +129,10 @@ export async function getRegionWithEvents(slug: string): Promise<Region | null> 
         min: Math.min(...prices),
         varies: new Set(prices).size > 1,
       });
+    });
+
+    (tpls ?? []).forEach((t) => {
+      if (t.description?.trim()) descByTemplate.set(t.id, t.description.trim());
     });
   }
 
@@ -135,11 +148,14 @@ export async function getRegionWithEvents(slug: string): Promise<Region | null> 
       const vm = e.virtual_male ?? 0;
       const vf = e.virtual_female ?? 0;
       const opt = e.template_id ? priceByTemplate.get(e.template_id) : undefined;
+      // 소개 문구 = 일정에 직접 쓴 문구 → 없으면 예약 상품의 "상세 소개"
+      const desc =
+        e.description?.trim() || (e.template_id ? descByTemplate.get(e.template_id) : "") || "";
       return {
         ...mapEvent({ ...e, joined: real.total + vm + vf }),
         male: real.male + vm,
         female: real.female + vf,
-        description: e.description ?? undefined,
+        description: desc || undefined,
         priceFrom: opt?.min ?? e.price,
         priceVaries: opt?.varies ?? false,
       };
@@ -197,7 +213,6 @@ export type MeetingDetail = MoimEvent & {
   regionName: string;
   closed_male: boolean;
   closed_female: boolean;
-  detail: DetailBlock[]; // 상품 상세 페이지 블록 (템플릿에서)
 };
 
 type DbMeetingDetail = DbMeeting & {
@@ -221,7 +236,6 @@ export async function getMeetingDetail(id: string): Promise<MeetingDetail | null
           regionName: region.name,
           closed_male: false,
           closed_female: false,
-          detail: [],
         };
       }
     }
@@ -231,32 +245,31 @@ export async function getMeetingDetail(id: string): Promise<MeetingDetail | null
   const { data } = await admin
     .from("meetings")
     .select(
-      "id,region_slug,date,time,title,tag,price,capacity,joined,image,description,place,closed_male,closed_female,template_id,regions(name)",
+      "id,region_slug,date,time,end_time,hidden,title,tag,price,capacity,joined,image,description,place,closed_male,closed_female,template_id,regions(name)",
     )
     .eq("id", id)
     .single<DbMeetingDetail>();
   if (!data) return null;
 
-  // 상품(템플릿)의 상세 블록
-  let detail: DetailBlock[] = [];
-  if (data.template_id) {
+  // 모임 소개 = 일정에 직접 쓴 문구가 있으면 그것, 없으면 예약 상품의 "상세 소개"
+  let description = data.description?.trim() || "";
+  if (!description && data.template_id) {
     const { data: tpl } = await admin
       .from("moim_templates")
-      .select("detail")
+      .select("description")
       .eq("id", data.template_id)
-      .maybeSingle<{ detail: DetailBlock[] }>();
-    if (Array.isArray(tpl?.detail)) detail = tpl.detail;
+      .maybeSingle<{ description: string | null }>();
+    description = tpl?.description?.trim() || "";
   }
 
   return {
     ...mapEvent(data),
-    description: data.description ?? undefined,
+    description: description || undefined,
     place: data.place ?? undefined,
     regionSlug: data.region_slug,
     regionName: data.regions?.name ?? data.region_slug,
     closed_male: data.closed_male ?? false,
     closed_female: data.closed_female ?? false,
-    detail,
   };
 }
 

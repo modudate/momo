@@ -548,7 +548,15 @@ function TemplateModal({
           </div>
           <div className="admin-field">
             <label className="admin-label">상세 소개</label>
-            <textarea className="admin-textarea" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            <textarea
+              className="admin-textarea"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="신청 페이지의 '모임 소개'에 그대로 나와요. 여기서 고치면 이 상품의 모든 일정에 바로 반영됩니다."
+            />
+            <p className="admin-hint">
+              신청 페이지 &apos;모임 소개&apos; + 일정 목록의 회색 한 줄에 쓰여요.
+            </p>
           </div>
 
           {/* 대표사진 업로드 */}
