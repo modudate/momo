@@ -79,35 +79,109 @@ export async function approve(params: {
   });
 }
 
+// ---------- 거래등록 (모바일 전용) ----------
+// 모바일 웹 결제창은 이걸 먼저 호출해 approvalKey / PayUrl 을 받아야 한다.
+// (PC 는 kcp_spay_hub.js 만으로 되지만, 모바일은 거래등록이 필수)
+export type RegisterResult =
+  | { ok: true; approvalKey: string; payUrl: string; traceNo: string }
+  | { ok: false; code: string; message: string };
+
+export async function registerTrade(params: {
+  ordr_idxx: string; // 주문번호
+  good_mny: number; // 결제금액
+  good_name: string; // 상품명
+  ret_url: string; // 인증 결과를 돌려받을 우리 주소
+  user_agent?: string;
+}): Promise<RegisterResult> {
+  if (!isKcpConfigured) {
+    return { ok: false, code: "9998", message: "KCP 키 미설정" };
+  }
+
+  const res = await fetch(KCP_API.register, {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=UTF-8" },
+    body: JSON.stringify({
+      site_cd: KCP.siteCd,
+      ordr_idxx: params.ordr_idxx,
+      good_mny: String(params.good_mny),
+      good_name: params.good_name.slice(0, 100),
+      pay_method: "CARD", // 신용카드
+      Ret_URL: params.ret_url,
+      escw_used: "N", // 에스크로 미사용
+      ...(params.user_agent ? { user_agent: params.user_agent } : {}),
+    }),
+  });
+
+  let data: Record<string, unknown> = {};
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    return { ok: false, code: "9999", message: `응답 파싱 실패 (HTTP ${res.status})` };
+  }
+
+  const code = String(data.Code ?? data.res_cd ?? "9999");
+  if (code !== "0000") {
+    return { ok: false, code, message: String(data.Message ?? data.res_msg ?? "거래등록 실패") };
+  }
+
+  return {
+    ok: true,
+    approvalKey: String(data.approvalKey ?? ""),
+    payUrl: String(data.PayUrl ?? ""),
+    traceNo: String(data.traceNo ?? ""),
+  };
+}
+
+// ---------- 거래 조회 ----------
+// 거래번호(tno)로 실제 결제가 됐는지 확인한다.
+// "승인은 났는데 우리 DB 저장이 실패한" 최악의 경우를 사람이 확인·복구할 때 쓴다.
+export async function inquiry(params: { tno: string; payType?: string }): Promise<KcpResult> {
+  if (!isKcpConfigured) {
+    return { ok: false, res_cd: "9998", res_msg: "KCP 키 미설정", raw: {} };
+  }
+  const payType = params.payType ?? "PACA";
+  return post(KCP_API.inquiry, {
+    site_cd: KCP.siteCd,
+    kcp_cert_info: certInfo(),
+    tno: params.tno,
+    pay_type: payType,
+    kcp_sign_data: sign(`${KCP.siteCd}^${params.tno}^${payType}`),
+  });
+}
+
 // ---------- 거래 취소 ----------
 //  · 전체취소 STSC / 부분취소 STPC
-//  · 부분취소는 취소금액(mod_mny)과 남은금액(rem_mny)을 함께 보낸다
+//  · ⚠️ 부분취소가 한 번이라도 있었던 건은 전체취소(STSC)로 요청할 수 없다.
+//       남은 잔액을 STPC 로 취소해야 한다. (KCP 거래취소 가이드)
+//    → hasPriorPartial 이 true 면 잔액 전체를 취소하더라도 STPC 를 쓴다.
 export async function cancel(params: {
   tno: string; // KCP 거래번호
   reason: string; // 취소 사유
-  partial?: {
-    modMny: number; // 이번에 취소할 금액
-    remMny: number; // 취소 후 남는 금액
-  };
+  modMny: number; // 이번에 취소할 금액
+  remMny: number; // 취소 후 남는 금액 (0 이면 잔액 전부 취소)
+  hasPriorPartial: boolean; // 이 거래에 부분취소 이력이 있는가
 }): Promise<KcpResult> {
   if (!isKcpConfigured) {
     return { ok: false, res_cd: "9998", res_msg: "KCP 키 미설정", raw: {} };
   }
 
-  const mod_type = params.partial ? "STPC" : "STSC";
+  // 남는 금액이 없고 + 부분취소 이력도 없을 때만 전체취소 가능
+  const isFullCancel = params.remMny === 0 && !params.hasPriorPartial;
+  const mod_type = isFullCancel ? "STSC" : "STPC";
+
   const body: Record<string, unknown> = {
     site_cd: KCP.siteCd,
     kcp_cert_info: certInfo(),
     tno: params.tno,
     mod_type,
     mod_desc: params.reason,
-    // site_cd ^ tno ^ mod_type 를 개인키로 서명
+    // 평문 site_cd ^ tno ^ mod_type 를 SHA256withRSA 로 서명 후 base64 (KCP 서명데이터 규격)
     kcp_sign_data: sign(`${KCP.siteCd}^${params.tno}^${mod_type}`),
   };
 
-  if (params.partial) {
-    body.mod_mny = String(params.partial.modMny);
-    body.rem_mny = String(params.partial.remMny);
+  if (mod_type === "STPC") {
+    body.mod_mny = String(params.modMny);
+    body.rem_mny = String(params.remMny);
   }
 
   return post(KCP_API.cancel, body);

@@ -95,8 +95,88 @@ function field(form: HTMLFormElement, name: string, value = "") {
   return el;
 }
 
+// 모바일 여부 — 모바일은 결제 흐름 자체가 다르다 (거래등록 → 결제창 페이지 이동)
+export function isMobileDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /Android|iPhone|iPad|iPod|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+}
+
+// ---------- 모바일 결제 ----------
+// PC 처럼 iframe 결제창을 못 쓴다. 반드시:
+//   1) 서버에서 KCP 거래등록 → approvalKey / PayUrl 수신
+//   2) 그 값으로 결제창 주소에 폼 POST (페이지 전체가 이동)
+//   3) 결제 후 KCP 가 우리 Ret_URL 로 폼 POST → 서버가 승인 처리 후 리다이렉트
+// 이 함수는 페이지를 떠나므로 반환되지 않는다.
+async function openPaymentMobile(params: PayParams): Promise<PayResult> {
+  const res = await fetch("/api/payments/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ordrNo: params.ordrNo, goodName: params.goodName }),
+  });
+
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+    return {
+      status: "failed",
+      message: data.message ?? "결제창을 준비하지 못했어요. 잠시 후 다시 시도해 주세요.",
+    };
+  }
+
+  const { approvalKey, payUrl } = (await res.json()) as {
+    approvalKey: string;
+    payUrl: string;
+  };
+  if (!approvalKey || !payUrl) {
+    return { status: "failed", message: "결제창 정보를 받지 못했어요." };
+  }
+
+  // KCP 규격: PayUrl 의 마지막 경로를 encodingFilter.jsp 로 바꿔서 폼 POST
+  const action = `${payUrl.substring(0, payUrl.lastIndexOf("/"))}/jsp/encodingFilter/encodingFilter.jsp`;
+
+  const form = document.createElement("form");
+  form.method = "post";
+  form.action = action;
+  form.acceptCharset = "euc-kr";
+  form.style.display = "none";
+
+  const add = (name: string, value: string) => {
+    const el = document.createElement("input");
+    el.type = "hidden";
+    el.name = name;
+    el.value = value;
+    form.appendChild(el);
+  };
+
+  add("approval_key", approvalKey);
+  add("PayUrl", payUrl);
+  add("site_cd", SITE_CD);
+  add("ordr_idxx", params.ordrNo);
+  add("good_mny", String(params.amount));
+  add("good_name", params.goodName.slice(0, 100));
+  add("buyr_name", params.buyerName);
+  add("buyr_tel2", params.buyerTel);
+  add("buyr_mail", params.buyerEmail ?? "");
+  add("pay_method", "CARD");
+  add("currency", "WON");
+  add("shop_name", "모두의 모임");
+  add("escw_used", "N");
+  add("res_cd", "");
+  add("res_msg", "");
+
+  document.body.appendChild(form);
+  form.submit(); // 페이지가 결제창으로 넘어간다
+
+  // 페이지가 이동하므로 여기로 돌아오지 않음
+  return new Promise<PayResult>(() => {});
+}
+
 // 결제창을 띄우고, 승인까지 끝난 결과를 돌려준다
 export async function openPayment(params: PayParams): Promise<PayResult> {
+  // 모바일은 완전히 다른 흐름 (거래등록 → 페이지 이동)
+  if (isMobileDevice()) {
+    return openPaymentMobile(params);
+  }
+
   try {
     await loadScript();
   } catch (e) {

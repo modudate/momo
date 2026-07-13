@@ -16,6 +16,14 @@ export const KCP_API = {
   cancel: isLive
     ? "https://spl.kcp.co.kr/gw/mod/v1/cancel"
     : "https://stg-spl.kcp.co.kr/gw/mod/v1/cancel",
+  // 거래등록 — 모바일 결제창은 이걸 먼저 호출해야 한다 (PC는 불필요)
+  register: isLive
+    ? "https://smpay.kcp.co.kr/trade/register.do"
+    : "https://testsmpay.kcp.co.kr/trade/register.do",
+  // 거래조회 — 승인 결과 재확인 (결제됐는데 저장 실패한 경우 복구용)
+  inquiry: isLive
+    ? "https://spl.kcp.co.kr/std/inquery"
+    : "https://stg-spl.kcp.co.kr/std/inquery",
 } as const;
 
 function fromB64(value: string | undefined): string {

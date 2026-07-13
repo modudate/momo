@@ -97,6 +97,28 @@ export default function MeetingDetailPage() {
     };
   }, [id]);
 
+  // 모바일 결제 후 KCP → 서버 → 이 페이지로 돌아온다 (?pay=done|fail|cancel)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const pay = params.get("pay");
+    if (!pay) return;
+
+    if (pay === "done") {
+      setOrdered(true);
+    } else if (pay === "cancel") {
+      setErrorMessage("결제를 취소했어요. 다시 신청하실 수 있어요.");
+    } else if (pay === "fail") {
+      const code = params.get("code");
+      setErrorMessage(
+        code === "hold_expired"
+          ? "자리 확보 시간이 지났어요. 다시 신청해 주세요."
+          : "결제에 실패했어요. 다시 시도해 주세요.",
+      );
+    }
+    // 새로고침해도 메시지가 다시 뜨지 않게 쿼리 제거
+    window.history.replaceState({}, "", window.location.pathname);
+  }, []);
+
   const hasOptions = (meeting?.options.length ?? 0) > 0;
 
   // 선택한 티켓들 (옵션 순서대로 펼침)

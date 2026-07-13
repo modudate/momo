@@ -112,6 +112,10 @@ export async function PATCH(req: Request) {
     const alreadyRefunded = all.reduce((s, o) => s + (o.refund_amount ?? 0), 0);
     const remainingBefore = paidTotal - alreadyRefunded;
 
+    // 이 거래에 이미 부분취소가 있었는가
+    //  → 있었다면 잔액을 전부 취소하더라도 전체취소(STSC)는 쓸 수 없다 (KCP 규정)
+    const hasPriorPartial = alreadyRefunded > 0;
+
     if (refundAmount > remainingBefore) refundAmount = remainingBefore; // 방어
 
     if (refundAmount > 0) {
@@ -119,11 +123,9 @@ export async function PATCH(req: Request) {
       const result = await kcpCancel({
         tno: order.pg_tid!,
         reason: `고객 취소 (환불 ${refundRate}%)`,
-        // 남는 금액이 없으면 전체취소, 있으면 부분취소
-        partial:
-          remainingAfter > 0
-            ? { modMny: refundAmount, remMny: remainingAfter }
-            : undefined,
+        modMny: refundAmount,
+        remMny: remainingAfter,
+        hasPriorPartial,
       });
 
       if (!result.ok) {
