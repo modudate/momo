@@ -485,8 +485,9 @@ body {
 }
 .admin-wrap {
   padding: 28px 32px 64px;
-  max-width: 1360px;
+  max-width: 1720px; /* 판매내역 컬럼이 많아 넉넉하게 */
   width: 100%;
+  min-width: 0; /* 표가 넘칠 때 부모를 밀지 않고 가로 스크롤 되도록 */
 }
 
 /* ---- 통계 카드 ---- */
@@ -3681,6 +3682,25 @@ select.auth-input {
 }
 
 /* 전화번호 복사 버튼 */
+/* 판매내역 표 — 글씨가 줄바꿈으로 잘리지 않게 한 줄 유지 + 넘치면 가로 스크롤 */
+.sales-table {
+  width: auto;
+  min-width: 100%;
+}
+.sales-table th,
+.sales-table td {
+  white-space: nowrap;
+}
+.sales-table td {
+  padding: 12px 14px;
+}
+/* 모임명이 아주 길면 이 칸만 말줄임 (나머지는 다 보이게) */
+.sales-table td:nth-child(4) {
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .sales-phone {
   display: inline-flex;
   align-items: center;
@@ -3693,6 +3713,7 @@ select.auth-input {
   color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
+  white-space: nowrap;
 }
 .sales-phone:hover {
   background: var(--accent-primary-light);

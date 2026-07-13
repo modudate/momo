@@ -291,7 +291,7 @@ export default function SalesPanel({ flash, mode }: { flash: (m: string) => void
               )}
             </div>
             <div className="admin-table-wrap">
-              <table className="admin-table">
+              <table className="admin-table sales-table">
                 <thead>
                   <tr>
                     <th>상태</th>
