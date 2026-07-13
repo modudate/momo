@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -21,7 +21,6 @@ import {
   EyeOff,
   Copy as CopyIcon,
 } from "lucide-react";
-import { toPng } from "html-to-image";
 import { regions, formatKRW } from "@/data/moim-data";
 import { useBackdropClose } from "@/lib/useBackdropClose";
 import { AdminDatePicker } from "./ui";
@@ -87,8 +86,42 @@ function dowOf(dateStr: string) {
   return DOW[new Date(y, m - 1, d).getDay()];
 }
 
+// 모임 진행 상태 (KST 기준)
+//  · 종료 : 종료시간이 지남 (종료시간 미설정이면 그 날짜가 지나면 종료)
+//  · 진행중: 시작시간은 지났지만 아직 안 끝남
+//  · 예정 : 아직 시작 전
+function meetingPhase(
+  m: { date: string; time: string; end_time: string | null },
+  today: string,
+  nowMs: number,
+): "ended" | "ongoing" | "upcoming" {
+  const startMs = new Date(`${m.date}T${m.time}:00+09:00`).getTime();
+
+  let endMs: number;
+  if (m.end_time) {
+    endMs = new Date(`${m.date}T${m.end_time}:00+09:00`).getTime();
+    // 자정을 넘기는 모임 (예: 21:00~01:00)
+    if (endMs <= startMs) endMs += 24 * 60 * 60 * 1000;
+  } else {
+    // 종료시간이 없으면 그 날짜가 지나면 끝난 것으로 본다
+    endMs = new Date(`${m.date}T23:59:59+09:00`).getTime();
+  }
+
+  if (nowMs > endMs) return "ended";
+  if (nowMs >= startMs) return "ongoing";
+  // 날짜만 봐도 과거면 종료 (시간 파싱 실패 대비)
+  if (m.date < today) return "ended";
+  return "upcoming";
+}
+
 export default function ReservationsPanel({ flash }: { flash: (m: string) => void }) {
   const today = useMemo(() => todayKST(), []);
+  // 진행중/종료 판정 기준 시각 (1분마다 갱신 → 모임이 끝나면 칩이 알아서 바뀜)
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
   const [year, setYear] = useState(() => Number(today.slice(0, 4)));
   const [month, setMonth] = useState(() => Number(today.slice(5, 7))); // 1-12
   const [region, setRegion] = useState("all");
@@ -130,15 +163,14 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
   };
   const [mForm, setMForm] = useState(emptyForm);
 
-  // 모달 배경 클릭 닫기(드래그 안전) + 명단 이미지 저장
+  // 모달 배경 클릭 닫기 (드래그 안전)
   const attendeeBackdrop = useBackdropClose(() => setSelected(null));
   const meetingBackdrop = useBackdropClose(() => setMeetingModal({ open: false, editId: null }));
   const moveBackdrop = useBackdropClose(() => {
     setMoveFor(null);
     setMoveTarget("");
   });
-  const captureRef = useRef<HTMLDivElement>(null);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false); // 엑셀 저장 중
 
   const monthKey = `${year}-${pad(month)}`;
   const nextMonthKey =
@@ -279,21 +311,32 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
     }
   };
 
-  // 명단을 이미지(PNG)로 저장 — 모임명·날짜·시간 포함
-  const saveImage = async () => {
-    if (!captureRef.current || !selected) return;
+  // 명단을 엑셀(xlsx)로 저장 — 남/여 두 블록 나란히 (명단 양식)
+  const saveExcel = async () => {
+    if (!selected) return;
     setSaving(true);
     try {
-      const dataUrl = await toPng(captureRef.current, {
-        backgroundColor: "#ffffff",
-        pixelRatio: 2,
-      });
+      const res = await fetch(
+        `/api/admin/reservations/attendees/xlsx?meetingId=${encodeURIComponent(selected.id)}`,
+      );
+      if (!res.ok) throw new Error("failed");
+
+      // 서버가 지정한 한글 파일명 사용
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const encoded = disposition.match(/filename\*=UTF-8''([^;]+)/)?.[1];
+      const filename = encoded
+        ? decodeURIComponent(encoded)
+        : `${selected.title}_${selected.date}_명단.xlsx`;
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.download = `${selected.title}_${selected.date}_참석명단.png`;
-      link.href = dataUrl;
+      link.href = url;
+      link.download = filename;
       link.click();
+      URL.revokeObjectURL(url);
     } catch {
-      flash("이미지 저장에 실패했어요.");
+      flash("엑셀 저장에 실패했어요.");
     } finally {
       setSaving(false);
     }
@@ -544,12 +587,27 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
                           {cell.items.map((m) => {
                             const shown = m.joined + (m.virtual_male ?? 0) + (m.virtual_female ?? 0);
                             const full = shown >= m.capacity;
+                            const phase = meetingPhase(m, today, nowMs);
                             const isTodayChip = m.date === today;
-                            const chipClass = full
-                              ? "res-chip is-closed"
-                              : isTodayChip
-                                ? "res-chip is-today"
-                                : "res-chip";
+                            // 끝난 모임(종료)이 가장 우선 → 회색. 그다음 마감, 당일 강조 순.
+                            const chipClass =
+                              phase === "ended"
+                                ? "res-chip is-ended"
+                                : full
+                                  ? "res-chip is-closed"
+                                  : phase === "ongoing"
+                                    ? "res-chip is-ongoing"
+                                    : isTodayChip
+                                      ? "res-chip is-today"
+                                      : "res-chip";
+                            const statusText =
+                              phase === "ended"
+                                ? "종료"
+                                : full
+                                  ? "마감"
+                                  : phase === "ongoing"
+                                    ? "진행중"
+                                    : "진행예정";
                             return (
                               <button
                                 key={m.id}
@@ -563,7 +621,7 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
                                 </span>
                                 <span className="res-chip-time">{m.time}</span>
                                 <span className="res-chip-status">
-                                  {full ? "마감" : "진행예정"} {shown}/{m.capacity}
+                                  {statusText} {shown}/{m.capacity}
                                 </span>
                               </button>
                             );
@@ -666,10 +724,10 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
                 </button>
                 <button
                   className="admin-btn admin-btn-primary admin-btn-sm"
-                  onClick={saveImage}
+                  onClick={saveExcel}
                   disabled={saving || attendees.length === 0}
                 >
-                  <Download size={14} /> {saving ? "저장 중…" : "이미지 저장"}
+                  <Download size={14} /> {saving ? "저장 중…" : "엑셀 저장"}
                 </button>
                 <button
                   className="admin-btn admin-btn-ghost admin-btn-sm"
@@ -723,8 +781,7 @@ export default function ReservationsPanel({ flash }: { flash: (m: string) => voi
               ) : attendees.length === 0 ? (
                 <div className="admin-empty" style={{ padding: 40 }}>아직 신청자가 없어요.</div>
               ) : (
-                <div className="res-capture" ref={captureRef}>
-                  {/* 이미지 저장 시 함께 캡처되는 머리글 */}
+                <div className="res-capture">
                   <div className="res-capture-head">
                     <div className="res-capture-title">{selected.title}</div>
                     <div className="res-capture-sub">

@@ -2907,6 +2907,26 @@ select.auth-input {
 .res-chip.is-closed .res-chip-status {
   color: #9aa0a6;
 }
+/* 종료(끝난 모임) — 더 연한 회색 + 흐리게 */
+.res-chip.is-ended {
+  background: #f4f5f7;
+}
+.res-chip.is-ended .res-chip-name,
+.res-chip.is-ended .res-chip-time,
+.res-chip.is-ended .res-chip-status {
+  color: #b0b8c1;
+}
+/* 진행중 — 주황 */
+.res-chip.is-ongoing {
+  background: #ffe8d6;
+}
+.res-chip.is-ongoing .res-chip-name,
+.res-chip.is-ongoing .res-chip-time {
+  color: #b35309;
+}
+.res-chip.is-ongoing .res-chip-status {
+  color: #d9480f;
+}
 
 /* 다음 달 이어보기 셀 */
 .res-cell-other {
