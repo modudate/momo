@@ -54,11 +54,13 @@ export async function POST(req: Request) {
     process.env.NEXT_PUBLIC_SITE_URL ??
     "https://www.joinmomo.co.kr";
 
+  const retUrl = `${origin}/api/payments/return`;
+
   const result = await registerTrade({
     ordr_idxx: body.ordrNo,
     good_mny: total,
     good_name: body.goodName ?? "모두의 모임",
-    ret_url: `${origin}/api/payments/return`,
+    ret_url: retUrl,
     user_agent: req.headers.get("user-agent") ?? undefined,
   });
 
@@ -74,6 +76,8 @@ export async function POST(req: Request) {
     approvalKey: result.approvalKey,
     payUrl: result.payUrl,
     traceNo: result.traceNo,
+    // ⚠️ 결제창으로 보내는 폼에도 Ret_URL 을 반드시 같이 실어야 한다 (없으면 KCP M016 오류)
+    retUrl,
     amount: total, // 서버가 확정한 금액
   });
 }

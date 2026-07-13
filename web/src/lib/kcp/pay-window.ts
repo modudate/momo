@@ -122,11 +122,13 @@ async function openPaymentMobile(params: PayParams): Promise<PayResult> {
     };
   }
 
-  const { approvalKey, payUrl } = (await res.json()) as {
+  const { approvalKey, payUrl, retUrl, traceNo } = (await res.json()) as {
     approvalKey: string;
     payUrl: string;
+    retUrl: string;
+    traceNo: string;
   };
-  if (!approvalKey || !payUrl) {
+  if (!approvalKey || !payUrl || !retUrl) {
     return { status: "failed", message: "결제창 정보를 받지 못했어요." };
   }
 
@@ -149,6 +151,9 @@ async function openPaymentMobile(params: PayParams): Promise<PayResult> {
 
   add("approval_key", approvalKey);
   add("PayUrl", payUrl);
+  // ⚠️ 거래등록에 넣은 것과 별개로, 결제창 폼에도 반드시 있어야 한다 (없으면 KCP M016 오류)
+  add("Ret_URL", retUrl);
+  add("traceNo", traceNo);
   add("site_cd", SITE_CD);
   add("ordr_idxx", params.ordrNo);
   add("good_mny", String(params.amount));
