@@ -137,8 +137,9 @@ async function openPaymentMobile(params: PayParams): Promise<PayResult> {
 
   const form = document.createElement("form");
   form.method = "post";
+  // KCP 의 encodingFilter.jsp 가 UTF-8 → EUC-KR 로 변환해준다.
+  // 여기서 acceptCharset 을 euc-kr 로 지정하면 이중 변환이 되어 한글이 깨진다(????). 건드리지 말 것.
   form.action = action;
-  form.acceptCharset = "euc-kr";
   form.style.display = "none";
 
   const add = (name: string, value: string) => {
