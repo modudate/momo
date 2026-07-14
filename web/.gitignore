@@ -1,1 +1,20 @@
 .vercel
+
+# 비밀값 — 상위 .gitignore 에도 있지만, web/ 만 따로 복사·분리했을 때를 대비해 여기서도 막는다
+.env
+.env.*
+!.env.local.example
+.env*.bak
+.env*.backup
+
+# 인증서 / 개인키 (KCP 등)
+*.pem
+*.key
+*.p12
+*.pfx
+KCP_AUTH_*
+
+# 빌드/의존성
+node_modules/
+.next/
+out/

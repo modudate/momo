@@ -76,7 +76,12 @@ export async function POST(req: Request) {
     });
   }
 
+  // 신청은 로그인 필수 — 화면(openSheet)만 막으면 API 직접 호출로 우회 가능하므로 서버에서도 강제.
+  // (비로그인 대량 신청으로 자리(10분 홀드)를 선점하는 어뷰징 차단)
   const user = await getServerUser();
+  if (!user) {
+    return NextResponse.json({ error: "login_required" }, { status: 401 });
+  }
   const options = await getMeetingOptions(meetingId);
   const hasOptions = options.length > 0;
 

@@ -4,6 +4,7 @@ import { getAdminClient } from "@/lib/supabase/admin";
 import { registerTrade } from "@/lib/kcp/client";
 import { isKcpConfigured } from "@/lib/kcp/config";
 import { ordrNoToGroupId } from "@/lib/kcp/order-no";
+import { SITE_URL } from "@/lib/site";
 
 // 거래등록 (모바일 전용)
 //  모바일 웹 결제창은 kcp_spay_hub.js 만으론 안 되고, 먼저 KCP 에 거래를 등록해
@@ -49,12 +50,8 @@ export async function POST(req: Request) {
   const total = pendings.reduce((s, o) => s + (o.amount ?? 0), 0);
 
   // 인증 결과를 돌려받을 우리 주소 (KCP 가 이 주소로 폼 POST 한다)
-  const origin =
-    req.headers.get("origin") ??
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    "https://www.joinmomo.co.kr";
-
-  const retUrl = `${origin}/api/payments/return`;
+  // ⚠️ Origin 헤더를 쓰면 안 된다 — 공격자가 바꿔 보내면 결제 인증 결과가 남의 서버로 간다.
+  const retUrl = `${SITE_URL}/api/payments/return`;
 
   const result = await registerTrade({
     ordr_idxx: body.ordrNo,

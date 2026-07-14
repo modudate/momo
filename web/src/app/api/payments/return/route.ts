@@ -3,6 +3,7 @@ import { getAdminClient } from "@/lib/supabase/admin";
 import { approveGroupOrder } from "@/lib/kcp/approve-order";
 import { ordrNoToGroupId } from "@/lib/kcp/order-no";
 import { payLog, maskFields } from "@/lib/kcp/log";
+import { SITE_URL } from "@/lib/site";
 
 // 모바일 결제창 인증 결과 수신 (Ret_URL)
 //  · KCP 가 이 주소로 폼(application/x-www-form-urlencoded) POST 를 보낸다.
@@ -32,8 +33,7 @@ function toPayType(payMethod: string): string {
 }
 
 export async function POST(req: Request) {
-  const origin =
-    process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin ?? "https://www.joinmomo.co.kr";
+  const origin = SITE_URL;
 
   let form: FormData;
   try {
@@ -102,7 +102,6 @@ export async function POST(req: Request) {
 }
 
 // KCP 설정 오류로 GET 이 들어오는 경우 대비
-export async function GET(req: Request) {
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin;
-  return redirect(origin, "/home");
+export async function GET() {
+  return redirect(SITE_URL, "/home");
 }

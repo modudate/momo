@@ -2,7 +2,7 @@ import { getAdminClient } from "@/lib/supabase/admin";
 import { approve } from "./client";
 import { ordrNoToGroupId } from "./order-no";
 import { notifyAdmins } from "@/lib/notify";
-import { payLog } from "./log";
+import { payLog, maskFields } from "./log";
 
 // 결제 승인 공통 처리 — PC(결제창 콜백)와 모바일(Ret_URL 콜백)이 같이 쓴다.
 //
@@ -108,7 +108,8 @@ export async function approveGroupOrder(params: {
     res_msg: result.res_msg,
     tno: result.tno,
     승인금액: result.amount,
-    raw: result.raw,
+    // 승인 성공 응답엔 카드번호(마스킹본)·구매자 정보가 들어올 수 있다 → 반드시 가리고 저장
+    raw: maskFields(result.raw as Record<string, unknown>),
   });
 
   if (!result.ok) {
