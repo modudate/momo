@@ -39,7 +39,13 @@ export default function TopNav({
     <header className="top-nav">
       {back && (
         <div className="top-nav-side top-nav-left">
-          <button type="button" className="top-nav-icon" aria-label="뒤로" onClick={goBack}>
+          <button
+            type="button"
+            className="top-nav-icon"
+            aria-label="뒤로"
+            data-backto={backTo}
+            onClick={goBack}
+          >
             <ChevronLeft size={24} strokeWidth={2.2} />
           </button>
         </div>
