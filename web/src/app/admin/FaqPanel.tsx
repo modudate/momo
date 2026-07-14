@@ -1,12 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Plus, Trash2, ArrowUp, ArrowDown, Save, RotateCcw, ExternalLink } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Plus, Trash2, ArrowUp, ArrowDown, Save, RotateCcw, ExternalLink, Pencil } from "lucide-react";
 import { DEFAULT_FAQ, type FaqItem } from "@/data/faq";
 
-// 자주 묻는 질문 관리 — 추가·수정·순서·삭제 후 [저장]
+const NO_CATEGORY = ""; // 분류가 없는 옛 데이터
+
+// 카테고리 목록 — 처음 등장한 순서 = 사이트의 탭 순서
+function categoriesOf(items: FaqItem[]): string[] {
+  return [...new Set(items.map((it) => (it.c ?? "").trim()))];
+}
+
+// 같은 카테고리끼리 붙여 정렬한다.
+// 사이트 /faq 는 "카테고리가 같고 순서상 붙어 있는" 질문끼리 한 탭으로 묶으므로,
+// 관리자에서 항상 이 형태를 유지해야 탭이 쪼개지지 않는다.
+function normalize(items: FaqItem[]): FaqItem[] {
+  const cats = categoriesOf(items);
+  return cats.flatMap((c) => items.filter((it) => (it.c ?? "").trim() === c));
+}
+
+// 자주 묻는 질문 관리 — 카테고리 탭 / 추가·수정·순서·삭제 후 [저장]
 export default function FaqPanel({ flash }: { flash: (m: string) => void }) {
   const [items, setItems] = useState<FaqItem[]>([]);
+  const [activeCat, setActiveCat] = useState<string>(NO_CATEGORY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -14,13 +30,15 @@ export default function FaqPanel({ flash }: { flash: (m: string) => void }) {
   const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch("/api/admin/site-content?key=faq");
+    let next = DEFAULT_FAQ;
     if (res.ok) {
       const data = (await res.json()) as { value: { items?: FaqItem[] } | null };
       const saved = data.value?.items;
-      setItems(Array.isArray(saved) && saved.length > 0 ? saved : DEFAULT_FAQ);
-    } else {
-      setItems(DEFAULT_FAQ);
+      if (Array.isArray(saved) && saved.length > 0) next = saved;
     }
+    const normalized = normalize(next);
+    setItems(normalized);
+    setActiveCat(categoriesOf(normalized)[0] ?? NO_CATEGORY);
     setDirty(false);
     setLoading(false);
   }, []);
@@ -30,14 +48,22 @@ export default function FaqPanel({ flash }: { flash: (m: string) => void }) {
   }, [load]);
 
   const mutate = (next: FaqItem[]) => {
-    setItems(next);
+    setItems(normalize(next));
     setDirty(true);
   };
 
+  const categories = useMemo(() => categoriesOf(items), [items]);
+
+  // 현재 탭의 질문들 — 전체 배열에서의 위치(idx)를 같이 들고 있어야 이동/삭제가 가능
+  const visible = useMemo(
+    () => items.map((it, idx) => ({ it, idx })).filter(({ it }) => (it.c ?? "").trim() === activeCat),
+    [items, activeCat],
+  );
+
   const save = async () => {
-    const cleaned = items
+    const cleaned = normalize(items)
       .map((it) => {
-        const c = it.c?.trim();
+        const c = (it.c ?? "").trim();
         return { ...(c ? { c } : {}), q: it.q.trim(), a: it.a.trim() };
       })
       .filter((it) => it.q); // 질문이 빈 항목은 제외
@@ -61,21 +87,57 @@ export default function FaqPanel({ flash }: { flash: (m: string) => void }) {
     }
   };
 
-  // 새 질문은 맨 위에 추가 (바로 보이고 입력하기 쉽게). 카테고리는 기존 첫 항목 것을 물려받는다.
-  const add = () => mutate([{ q: "", a: "", c: items[0]?.c ?? "" }, ...items]);
-  // 이미 쓰고 있는 카테고리 목록 (입력 자동완성용)
-  const categories = [...new Set(items.map((it) => it.c?.trim()).filter(Boolean))] as string[];
-  const remove = (i: number) => mutate(items.filter((_, idx) => idx !== i));
-  const move = (i: number, dir: -1 | 1) => {
-    const to = i + dir;
-    if (to < 0 || to >= items.length) return;
+  // 새 질문은 현재 탭의 "맨 위"에 추가한다
+  const add = () => {
+    const first = visible[0]?.idx ?? items.length;
     const next = [...items];
-    [next[i], next[to]] = [next[to], next[i]];
+    next.splice(first, 0, { q: "", a: "", c: activeCat });
     mutate(next);
   };
-  const setField = (i: number, field: keyof FaqItem, value: string) => {
+
+  const addCategory = () => {
+    const name = window.prompt("새 카테고리 이름 (예: 🎁 기타)")?.trim();
+    if (!name) return;
+    if (categories.includes(name)) {
+      setActiveCat(name);
+      return;
+    }
+    mutate([...items, { q: "", a: "", c: name }]);
+    setActiveCat(name);
+  };
+
+  const renameCategory = () => {
+    const name = window.prompt("카테고리 이름 수정", activeCat)?.trim();
+    if (!name || name === activeCat) return;
+    mutate(items.map((it) => ((it.c ?? "").trim() === activeCat ? { ...it, c: name } : it)));
+    setActiveCat(name);
+  };
+
+  const remove = (idx: number) => {
+    const next = items.filter((_, i) => i !== idx);
+    mutate(next);
+    // 이 탭의 마지막 질문을 지웠으면 남아있는 탭으로 옮겨간다
+    if (!next.some((it) => (it.c ?? "").trim() === activeCat)) {
+      setActiveCat(categoriesOf(next)[0] ?? NO_CATEGORY);
+    }
+  };
+
+  // 같은 카테고리 안에서만 위/아래 이동 (탭을 넘나들지 않는다)
+  const move = (pos: number, dir: -1 | 1) => {
+    const to = pos + dir;
+    if (to < 0 || to >= visible.length) return;
+    const a = visible[pos].idx;
+    const b = visible[to].idx;
     const next = [...items];
-    next[i] = { ...next[i], [field]: value };
+    [next[a], next[b]] = [next[b], next[a]];
+    mutate(next);
+  };
+
+  const setField = (idx: number, field: keyof FaqItem, value: string) => {
+    const next = [...items];
+    next[idx] = { ...next[idx], [field]: value };
+    // 카테고리를 바꾸면 그 탭으로 따라간다
+    if (field === "c") setActiveCat(value);
     mutate(next);
   };
 
@@ -90,7 +152,9 @@ export default function FaqPanel({ flash }: { flash: (m: string) => void }) {
   return (
     <div className="admin-card">
       <div className="admin-card-head">
-        <span className="admin-card-title">자주 묻는 질문 ({items.length})</span>
+        <span className="admin-card-title">
+          자주 묻는 질문 ({items.length})
+        </span>
         <div className="flex gap-1.5">
           <a
             href="/faq"
@@ -104,7 +168,10 @@ export default function FaqPanel({ flash }: { flash: (m: string) => void }) {
             className="admin-btn admin-btn-ghost admin-btn-sm"
             onClick={() => {
               if (window.confirm("기본 질문으로 되돌릴까요? (저장을 눌러야 실제로 반영돼요)")) {
-                mutate(DEFAULT_FAQ);
+                const d = normalize(DEFAULT_FAQ);
+                setItems(d);
+                setActiveCat(categoriesOf(d)[0] ?? NO_CATEGORY);
+                setDirty(true);
               }
             }}
           >
@@ -123,71 +190,91 @@ export default function FaqPanel({ flash }: { flash: (m: string) => void }) {
         </div>
       </div>
 
+      {/* 카테고리 탭 — 사이트 /faq 의 탭과 같은 구성 */}
+      <div className="faq-adm-tabs">
+        {categories.map((c) => {
+          const count = items.filter((it) => (it.c ?? "").trim() === c).length;
+          return (
+            <button
+              key={c || "(분류없음)"}
+              type="button"
+              className="faq-adm-tab"
+              data-active={c === activeCat}
+              onClick={() => setActiveCat(c)}
+            >
+              {c || "분류 없음"} <span className="faq-adm-tab-n">{count}</span>
+            </button>
+          );
+        })}
+        <button type="button" className="faq-adm-tab is-add" onClick={addCategory}>
+          <Plus size={14} /> 카테고리
+        </button>
+      </div>
+
       <div className="admin-card-pad">
         <p className="tds-caption" style={{ marginBottom: 14 }}>
-          홈 하단의 <b>자주 묻는 질문</b> 페이지에 그대로 나와요. 답변에서 <b>줄바꿈</b>은 그대로 반영됩니다.
-          <br />
-          <b>카테고리</b>가 같고 <b>순서상 붙어 있는</b> 질문끼리 한 묶음으로 나옵니다.
+          사이트 <b>자주 묻는 질문</b> 페이지에 카테고리별 탭으로 나옵니다. 답변의 <b>줄바꿈</b>은 그대로
+          반영돼요. <b>질문 추가</b>는 지금 보고 있는 탭의 맨 위에 생깁니다.
         </p>
 
-        {/* 카테고리 입력 자동완성 */}
-        <datalist id="faq-categories">
-          {categories.map((c) => (
-            <option key={c} value={c} />
-          ))}
-        </datalist>
-
-        {items.length === 0 ? (
+        {visible.length === 0 ? (
           <div className="admin-empty">
-            질문이 없어요. <b>질문 추가</b>로 만들어 보세요.
+            이 카테고리에 질문이 없어요. <b>질문 추가</b>로 만들어 보세요.
           </div>
         ) : (
           <div className="faq-admin-list">
-            {items.map((item, i) => (
-              <div className="faq-admin-item" key={i}>
-                <div className="faq-admin-no">Q{i + 1}</div>
+            {visible.map(({ it, idx }, pos) => (
+              <div className="faq-admin-item" key={idx}>
+                <div className="faq-admin-no">Q{pos + 1}</div>
                 <div className="faq-admin-body">
                   <input
                     className="admin-input"
-                    value={item.c ?? ""}
-                    onChange={(e) => setField(i, "c", e.target.value)}
-                    placeholder="카테고리 (예: 📌 예약/참가) — 위 질문과 같으면 같은 묶음으로 나와요"
-                    list="faq-categories"
-                  />
-                  <input
-                    className="admin-input"
-                    value={item.q}
-                    onChange={(e) => setField(i, "q", e.target.value)}
+                    value={it.q}
+                    onChange={(e) => setField(idx, "q", e.target.value)}
                     placeholder="질문 (예: 혼자 가도 괜찮을까요?)"
                   />
                   <textarea
                     className="admin-textarea"
                     rows={3}
-                    value={item.a}
-                    onChange={(e) => setField(i, "a", e.target.value)}
+                    value={it.a}
+                    onChange={(e) => setField(idx, "a", e.target.value)}
                     placeholder="답변 (줄바꿈 가능)"
                   />
+                  <label className="faq-admin-move">
+                    카테고리
+                    <select
+                      className="admin-input"
+                      value={(it.c ?? "").trim()}
+                      onChange={(e) => setField(idx, "c", e.target.value)}
+                    >
+                      {categories.map((c) => (
+                        <option key={c || "(분류없음)"} value={c}>
+                          {c || "분류 없음"}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
                 <div className="faq-admin-tools">
                   <button
                     className="admin-btn admin-btn-ghost admin-btn-sm admin-btn-icon"
-                    onClick={() => move(i, -1)}
-                    disabled={i === 0}
+                    onClick={() => move(pos, -1)}
+                    disabled={pos === 0}
                     title="위로"
                   >
                     <ArrowUp size={14} />
                   </button>
                   <button
                     className="admin-btn admin-btn-ghost admin-btn-sm admin-btn-icon"
-                    onClick={() => move(i, 1)}
-                    disabled={i === items.length - 1}
+                    onClick={() => move(pos, 1)}
+                    disabled={pos === visible.length - 1}
                     title="아래로"
                   >
                     <ArrowDown size={14} />
                   </button>
                   <button
                     className="admin-btn admin-btn-danger admin-btn-sm admin-btn-icon"
-                    onClick={() => remove(i)}
+                    onClick={() => remove(idx)}
                     title="삭제"
                   >
                     <Trash2 size={14} />
@@ -196,6 +283,16 @@ export default function FaqPanel({ flash }: { flash: (m: string) => void }) {
               </div>
             ))}
           </div>
+        )}
+
+        {activeCat && (
+          <button
+            className="admin-btn admin-btn-ghost admin-btn-sm"
+            style={{ marginTop: 12 }}
+            onClick={renameCategory}
+          >
+            <Pencil size={14} /> &lsquo;{activeCat}&rsquo; 카테고리 이름 수정
+          </button>
         )}
       </div>
     </div>

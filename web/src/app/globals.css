@@ -4170,6 +4170,57 @@ select.auth-input {
   flex-direction: column;
   gap: 12px;
 }
+/* 관리자 FAQ — 카테고리 탭 (사이트 /faq 탭과 같은 구성) */
+.faq-adm-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 16px 0;
+  border-bottom: 1px solid var(--adm-border);
+  padding-bottom: 12px;
+}
+.faq-adm-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--adm-border);
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.faq-adm-tab[data-active="true"] {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #fff;
+}
+.faq-adm-tab-n {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.65;
+}
+.faq-adm-tab.is-add {
+  border-style: dashed;
+  color: var(--text-tertiary);
+}
+/* 항목의 카테고리 이동 선택 */
+.faq-admin-move {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+}
+.faq-admin-move select {
+  max-width: 220px;
+}
+
 .faq-admin-item {
   display: flex;
   align-items: flex-start;
