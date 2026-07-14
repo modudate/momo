@@ -3,6 +3,7 @@ import TopNav from "@/components/TopNav";
 import SiteFooter from "@/components/SiteFooter";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { DEFAULT_FAQ, type FaqItem } from "@/data/faq";
+import FaqTabs from "./FaqTabs";
 
 export const metadata: Metadata = {
   title: "자주 묻는 질문",
@@ -55,22 +56,7 @@ export default async function FaqPage() {
         <p className="tds-caption mt-2">궁금한 점이 있으면 문의하기로 연락 주세요.</p>
       </div>
 
-      {groupByCategory(faqs).map((group, gi) => (
-        <section className="page-content pt-5" key={gi}>
-          {group.category && <h3 className="faq-cat">{group.category}</h3>}
-          <div className="faq-list">
-            {group.items.map((item, i) => (
-              <details key={i} className="faq-item" open={gi === 0 && i === 0}>
-                <summary className="faq-q">
-                  <span className="faq-mark">Q</span>
-                  {item.q}
-                </summary>
-                <p className="faq-a">{item.a}</p>
-              </details>
-            ))}
-          </div>
-        </section>
-      ))}
+      <FaqTabs groups={groupByCategory(faqs)} />
 
       <SiteFooter />
     </div>

@@ -61,8 +61,8 @@ export default function FaqPanel({ flash }: { flash: (m: string) => void }) {
     }
   };
 
-  // 새 질문은 마지막 항목과 같은 카테고리로 시작 (대부분 같은 묶음에 이어 붙이므로)
-  const add = () => mutate([...items, { q: "", a: "", c: items[items.length - 1]?.c ?? "" }]);
+  // 새 질문은 맨 위에 추가 (바로 보이고 입력하기 쉽게). 카테고리는 기존 첫 항목 것을 물려받는다.
+  const add = () => mutate([{ q: "", a: "", c: items[0]?.c ?? "" }, ...items]);
   // 이미 쓰고 있는 카테고리 목록 (입력 자동완성용)
   const categories = [...new Set(items.map((it) => it.c?.trim()).filter(Boolean))] as string[];
   const remove = (i: number) => mutate(items.filter((_, idx) => idx !== i));
