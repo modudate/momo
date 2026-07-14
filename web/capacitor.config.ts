@@ -9,7 +9,9 @@ const config: CapacitorConfig = {
   webDir: "public",
   server: {
     // 배포된 웹을 그대로 네이티브 WebView 로 로드 → 웹 업데이트가 앱에 즉시 반영
-    url: "https://mazu-demo.vercel.app",
+    // ⚠️ 반드시 운영 도메인. 옛 주소(mazu-demo.vercel.app)는 결제 붙기 전 빌드에서 멈춰 있어
+    //    신청이 결제 없이 "접수됨" 으로 끝나 버린다.
+    url: "https://www.joinmomo.co.kr",
     cleartext: false,
   },
   ios: {
