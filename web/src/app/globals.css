@@ -1556,7 +1556,11 @@ body {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
-  padding: 18px 18px 0;
+  padding: 18px; /* 사방 동일 */
+}
+/* 슬라이드가 여러 장이면 점(.home-dots)이 하단 여백 몫을 대신한다 → 카드 패딩을 덜어 총합을 18px 로 맞춤 */
+.home-review:has(.home-dots) {
+  padding-bottom: 4px;
 }
 .home-review-ph {
   width: 100%;
@@ -1584,7 +1588,7 @@ body {
   visibility: visible;
 }
 .home-review-body {
-  padding: 16px 2px 4px;
+  padding: 16px 2px 0; /* 하단 여백은 카드 패딩이 담당 */
 }
 .home-review-title {
   font-size: 19px;
