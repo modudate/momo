@@ -2686,6 +2686,24 @@ select.auth-input {
   margin: 18px 0;
 }
 
+/* 유튜브 영상 — 폭 80%, 가운데, 16:9 고정.
+   ⚠️ 80vw 가 아니라 80% 다. 본문 컬럼은 최대 480px(--app-max)라
+      PC 에서 80vw 를 쓰면 컬럼 밖으로 튀어나간다. */
+.rich-view .rv-video {
+  width: 80%;
+  margin: 16px auto;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #000;
+}
+.rich-view .rv-video iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
 /* 홈 상세(/moim)에서는 글에 여백, 이미지는 풀블리드 */
 .moim-view .rich-view {
   padding: 14px var(--page-px) 20px;
@@ -2698,6 +2716,12 @@ select.auth-input {
   height: auto; /* 원본 비율 유지 */
   margin-left: calc(var(--page-px) * -1);
   margin-right: calc(var(--page-px) * -1);
+}
+/* 영상 80% 는 "화면(본문 컬럼) 기준" 이다.
+   .rich-view 에 좌우 여백이 있어 그냥 80% 로 두면 화면 대비 72% 밖에 안 된다.
+   → 여백을 되돌린 폭(= 컬럼 전체)의 80% 로 잡는다. */
+.moim-view .rich-view .rv-video {
+  width: calc((100% + var(--page-px) * 2) * 0.8);
 }
 .moim-apply {
   display: flex;
@@ -4485,6 +4509,14 @@ select.auth-input {
 }
 .wys-editor img {
   max-width: 100%;
+}
+/* 편집 중에는 영상이 클릭을 먹지 않게 (블록을 선택·삭제할 수 있어야 한다) */
+.wys-editor .rv-video {
+  outline: 2px dashed var(--adm-border);
+  outline-offset: 2px;
+}
+.wys-editor .rv-video iframe {
+  pointer-events: none;
 }
 
 /* 상세 페이지 블록 에디터 */

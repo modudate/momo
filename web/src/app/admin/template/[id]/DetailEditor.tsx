@@ -10,6 +10,7 @@ import {
   AlignCenter,
   Minus,
   ImagePlus,
+  Youtube,
   Save,
 } from "lucide-react";
 import { uploadImage } from "@/lib/uploadImage";
@@ -21,6 +22,30 @@ type Block =
 
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// 유튜브 주소에서 영상 ID 추출 — 일반/단축/embed/Shorts 주소를 모두 받는다
+//   https://www.youtube.com/watch?v=ID  ·  https://youtu.be/ID
+//   https://www.youtube.com/embed/ID    ·  https://www.youtube.com/shorts/ID
+export function youtubeId(input: string): string | null {
+  const url = input.trim();
+  if (!url) return null;
+  // 주소가 아니라 ID 만 붙여넣은 경우
+  if (/^[\w-]{11}$/.test(url)) return url;
+  const m = url.match(
+    /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/,
+  );
+  return m ? m[1] : null;
+}
+
+// 영상 블록 HTML — contentEditable 안에서 통째로 다뤄지도록 contenteditable=false
+function videoHtml(id: string): string {
+  return (
+    `<figure class="rv-video" contenteditable="false" data-yt="${id}">` +
+    `<iframe src="https://www.youtube-nocookie.com/embed/${id}" title="YouTube" loading="lazy" ` +
+    `allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" ` +
+    `allowfullscreen></iframe></figure><p><br></p>`
+  );
+}
 
 // 구 블록(텍스트/이미지) → HTML 문서로 변환 (게시판식 에디터로 이어서 편집)
 function legacyToHtml(blocks: Block[]): string {
@@ -79,7 +104,9 @@ export default function DetailEditor({
   const save = async () => {
     const el = editorRef.current;
     if (!el) return;
-    const hasContent = (el.textContent ?? "").trim().length > 0 || el.querySelector("img,hr");
+    // 영상만 넣은 경우도 "내용 있음" 으로 봐야 한다 (iframe 은 textContent 가 비어 있다)
+    const hasContent =
+      (el.textContent ?? "").trim().length > 0 || el.querySelector("img,hr,.rv-video,iframe");
     const detail: Block[] = hasContent ? [{ type: "html", html: el.innerHTML }] : [];
     setSaving(true);
     const res = await fetch("/api/admin/templates/detail", {
@@ -121,6 +148,25 @@ export default function DetailEditor({
     } finally {
       setUploading(false);
     }
+  };
+
+  // 유튜브 영상 삽입 — 주소를 붙여넣으면 커서 위치에 들어간다
+  const addVideo = () => {
+    const url = window.prompt(
+      "유튜브 주소를 붙여넣어 주세요.\n(예: https://www.youtube.com/watch?v=... 또는 https://youtu.be/...)",
+    );
+    if (url === null) return; // 취소
+    const id = youtubeId(url);
+    if (!id) {
+      flash("유튜브 주소를 알아볼 수 없어요. 주소를 다시 확인해 주세요.");
+      return;
+    }
+    const html = videoHtml(id);
+    editorRef.current?.focus();
+    if (!document.execCommand("insertHTML", false, html) && editorRef.current) {
+      editorRef.current.innerHTML += html; // 삽입 실패 시 맨 뒤에 추가
+    }
+    setDirty(true);
   };
 
   // 붙여넣기는 서식 없이 텍스트만 (외부 서식 오염 방지)
@@ -179,6 +225,14 @@ export default function DetailEditor({
             }}
           />
         </label>
+        <button
+          type="button"
+          className="admin-btn admin-btn-ghost admin-btn-sm"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={addVideo}
+        >
+          <Youtube size={14} /> 유튜브 영상
+        </button>
       </div>
 
       {loading && <div className="admin-empty">불러오는 중…</div>}

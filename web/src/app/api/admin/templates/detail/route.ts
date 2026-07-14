@@ -21,10 +21,21 @@ function isValidBlocks(v: unknown): v is DetailBlock[] {
   );
 }
 
+// 허용하는 유일한 iframe — 유튜브 embed
+const YOUTUBE_EMBED = /^https:\/\/www\.youtube(?:-nocookie)?\.com\/embed\/[\w-]{11}(?:\?[\w=&%.,-]*)?$/;
+
 // 에디터 HTML 정리 — 스크립트류 제거 (작성자는 관리자뿐이지만 방어적으로)
+//  · iframe 은 유튜브 embed 만 남기고 나머지는 전부 제거한다.
+//    (예전엔 iframe 을 통째로 지워서, 영상을 넣어도 저장하면 사라졌다)
 function sanitizeHtml(html: string): string {
   return html
-    .replace(/<\/?(script|style|iframe|object|embed|link|meta)\b[^>]*>/gi, "")
+    // 여는 태그 + (있으면) 내용과 닫는 태그까지 한 덩어리로 잡는다.
+    // 유튜브면 통째로 남기고, 아니면 통째로 지운다. 닫는 태그가 없는 iframe 도 이 한 번에 걸린다.
+    .replace(/<iframe\b[^>]*>(?:[\s\S]*?<\/iframe>)?/gi, (tag) => {
+      const src = tag.match(/\ssrc\s*=\s*["']([^"']+)["']/i)?.[1] ?? "";
+      return YOUTUBE_EMBED.test(src) ? tag : "";
+    })
+    .replace(/<\/?(script|style|object|embed|link|meta)\b[^>]*>/gi, "")
     .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
     .replace(/(href|src)\s*=\s*(["']?)\s*javascript:[^"'>\s]*\2/gi, "");
 }
