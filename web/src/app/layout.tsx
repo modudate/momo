@@ -27,7 +27,10 @@ export const metadata: Metadata = {
   },
   // 검색엔진 소유 확인 (구글 서치콘솔 / 네이버 서치어드바이저)
   verification: {
-    google: "8y2tUL0ZDIVqpg6VivIUawD81DfrcGnZgFo6t3bzAaA",
+    google: [
+      "8y2tUL0ZDIVqpg6VivIUawD81DfrcGnZgFo6t3bzAaA",
+      "0KXEk5DqhzJwPRzmBwYU2Z2vEs3pMGa9gWy6womepiI",
+    ],
     other: { "naver-site-verification": "cd64fd695b6ecd0a7d493f09f037db19781621f5" },
   },
   // 카톡/SNS 공유 미리보기
