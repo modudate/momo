@@ -25,6 +25,18 @@ async function loadFaq(): Promise<FaqItem[]> {
   return items.filter((it) => it?.q?.trim());
 }
 
+// 카테고리 단위로 묶는다. 저장된 순서를 그대로 유지한다 (관리자가 정한 순서가 곧 노출 순서).
+function groupByCategory(items: FaqItem[]): { category: string; items: FaqItem[] }[] {
+  const groups: { category: string; items: FaqItem[] }[] = [];
+  for (const item of items) {
+    const category = item.c?.trim() ?? "";
+    const last = groups[groups.length - 1];
+    if (last && last.category === category) last.items.push(item);
+    else groups.push({ category, items: [item] });
+  }
+  return groups;
+}
+
 export const revalidate = 60; // 관리자 수정은 최대 1분 내 반영
 
 export default async function FaqPage() {
@@ -43,19 +55,22 @@ export default async function FaqPage() {
         <p className="tds-caption mt-2">궁금한 점이 있으면 문의하기로 연락 주세요.</p>
       </div>
 
-      <section className="page-content pt-5">
-        <div className="faq-list">
-          {faqs.map((item, i) => (
-            <details key={i} className="faq-item" open={i === 0}>
-              <summary className="faq-q">
-                <span className="faq-mark">Q</span>
-                {item.q}
-              </summary>
-              <p className="faq-a">{item.a}</p>
-            </details>
-          ))}
-        </div>
-      </section>
+      {groupByCategory(faqs).map((group, gi) => (
+        <section className="page-content pt-5" key={gi}>
+          {group.category && <h3 className="faq-cat">{group.category}</h3>}
+          <div className="faq-list">
+            {group.items.map((item, i) => (
+              <details key={i} className="faq-item" open={gi === 0 && i === 0}>
+                <summary className="faq-q">
+                  <span className="faq-mark">Q</span>
+                  {item.q}
+                </summary>
+                <p className="faq-a">{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+      ))}
 
       <SiteFooter />
     </div>

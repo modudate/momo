@@ -36,7 +36,10 @@ export default function FaqPanel({ flash }: { flash: (m: string) => void }) {
 
   const save = async () => {
     const cleaned = items
-      .map((it) => ({ q: it.q.trim(), a: it.a.trim() }))
+      .map((it) => {
+        const c = it.c?.trim();
+        return { ...(c ? { c } : {}), q: it.q.trim(), a: it.a.trim() };
+      })
       .filter((it) => it.q); // 질문이 빈 항목은 제외
     if (cleaned.length === 0) {
       flash("질문을 하나 이상 입력해 주세요.");
@@ -58,7 +61,10 @@ export default function FaqPanel({ flash }: { flash: (m: string) => void }) {
     }
   };
 
-  const add = () => mutate([...items, { q: "", a: "" }]);
+  // 새 질문은 마지막 항목과 같은 카테고리로 시작 (대부분 같은 묶음에 이어 붙이므로)
+  const add = () => mutate([...items, { q: "", a: "", c: items[items.length - 1]?.c ?? "" }]);
+  // 이미 쓰고 있는 카테고리 목록 (입력 자동완성용)
+  const categories = [...new Set(items.map((it) => it.c?.trim()).filter(Boolean))] as string[];
   const remove = (i: number) => mutate(items.filter((_, idx) => idx !== i));
   const move = (i: number, dir: -1 | 1) => {
     const to = i + dir;
@@ -120,7 +126,16 @@ export default function FaqPanel({ flash }: { flash: (m: string) => void }) {
       <div className="admin-card-pad">
         <p className="tds-caption" style={{ marginBottom: 14 }}>
           홈 하단의 <b>자주 묻는 질문</b> 페이지에 그대로 나와요. 답변에서 <b>줄바꿈</b>은 그대로 반영됩니다.
+          <br />
+          <b>카테고리</b>가 같고 <b>순서상 붙어 있는</b> 질문끼리 한 묶음으로 나옵니다.
         </p>
+
+        {/* 카테고리 입력 자동완성 */}
+        <datalist id="faq-categories">
+          {categories.map((c) => (
+            <option key={c} value={c} />
+          ))}
+        </datalist>
 
         {items.length === 0 ? (
           <div className="admin-empty">
@@ -132,6 +147,13 @@ export default function FaqPanel({ flash }: { flash: (m: string) => void }) {
               <div className="faq-admin-item" key={i}>
                 <div className="faq-admin-no">Q{i + 1}</div>
                 <div className="faq-admin-body">
+                  <input
+                    className="admin-input"
+                    value={item.c ?? ""}
+                    onChange={(e) => setField(i, "c", e.target.value)}
+                    placeholder="카테고리 (예: 📌 예약/참가) — 위 질문과 같으면 같은 묶음으로 나와요"
+                    list="faq-categories"
+                  />
                   <input
                     className="admin-input"
                     value={item.q}

@@ -1,7 +1,8 @@
 // 자주 묻는 질문 — 관리자에서 수정 가능 (site_content 의 'faq' 키에 저장).
 // 아래는 관리자가 아직 아무것도 저장하지 않았을 때 보여줄 기본값.
 
-export type FaqItem = { q: string; a: string };
+// c: 카테고리 (예: "📌 예약/참가"). 없으면 분류 없이 한 덩어리로 보여준다.
+export type FaqItem = { q: string; a: string; c?: string };
 
 export const DEFAULT_FAQ: FaqItem[] = [
   {

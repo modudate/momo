@@ -4071,6 +4071,14 @@ select.auth-input {
 }
 
 /* FAQ */
+/* 카테고리 제목 (📌 예약/참가 등) */
+.faq-cat {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
 .faq-list {
   display: flex;
   flex-direction: column;
