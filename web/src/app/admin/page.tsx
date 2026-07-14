@@ -25,7 +25,7 @@ import {
   LayoutList,
   HelpCircle,
 } from "lucide-react";
-import { regions, formatKRW } from "@/data/moim-data";
+import { regions, formatKRW, regionLabel } from "@/data/moim-data";
 import { CATEGORIES, categoryLabel, AGE_GROUP_PRESETS } from "@/data/taxonomy";
 import { useBackdropClose } from "@/lib/useBackdropClose";
 import ReservationsPanel from "./ReservationsPanel";
@@ -359,7 +359,8 @@ export default function AdminPage() {
                         </span>
                         <p className="text-[15px] font-bold mt-2">{t.title}</p>
                         <p className="tds-caption mt-1">
-                          {t.region_slug} · {t.age_group} · {formatKRW(t.price)} · 정원 {t.capacity}
+                          {regionLabel(t.region_slug)} · {t.age_group} · {formatKRW(t.price)} · 정원{" "}
+                          {t.capacity}
                         </p>
                       </div>
                       <div className="admin-item-foot">

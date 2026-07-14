@@ -192,3 +192,8 @@ export function getVerifyPlan(slug: string): VerifyPlan | undefined {
 export function formatKRW(n: number): string {
   return `${n.toLocaleString("ko-KR")}원`;
 }
+
+// 지역 슬러그(gangnam) → 표시용 한글 이름(강남). 모르는 슬러그면 그대로 둔다.
+export function regionLabel(slug: string): string {
+  return regions.find((r) => r.slug === slug)?.name ?? slug;
+}

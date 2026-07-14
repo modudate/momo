@@ -15,7 +15,7 @@ import {
   Tag,
 } from "lucide-react";
 import { categoryLabel } from "@/data/taxonomy";
-import { formatKRW } from "@/data/moim-data";
+import { formatKRW, regionLabel } from "@/data/moim-data";
 import { AdminDatePicker } from "../../ui";
 
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
@@ -240,7 +240,9 @@ export default function TemplateSchedulePage() {
             </Link>
             <h1 className="admin-top-title">{template?.title ?? "상품"} · 일정관리</h1>
             <p className="admin-top-sub">
-              {template ? `${categoryLabel(template.category)} · ${template.region_slug} · ${template.age_group} · 정원 ${template.capacity}` : ""}
+              {template
+                ? `${categoryLabel(template.category)} · ${regionLabel(template.region_slug)} · ${template.age_group} · 정원 ${template.capacity}`
+                : ""}
             </p>
           </div>
         </header>
