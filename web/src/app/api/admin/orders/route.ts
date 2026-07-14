@@ -5,6 +5,7 @@ import { notifyAdmins } from "@/lib/notify";
 import { cancel as kcpCancel } from "@/lib/kcp/client";
 import { isKcpConfigured } from "@/lib/kcp/config";
 import { computeRefundRate } from "@/lib/refund";
+import { expireStaleOrders } from "@/lib/expire";
 
 // 주문 목록 조회 (관리자) — 모임 제목 포함
 export async function GET() {
@@ -15,6 +16,9 @@ export async function GET() {
   if (!supabaseAdmin) {
     return NextResponse.json({ error: "not_configured" }, { status: 503 });
   }
+
+  // 기한 지난 결제대기를 먼저 정리 (안 하면 자리는 반납됐는데 "결제대기" 로 계속 보인다)
+  await expireStaleOrders(supabaseAdmin);
 
   const { data: orders } = await supabaseAdmin
     .from("orders")

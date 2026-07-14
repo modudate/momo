@@ -133,6 +133,10 @@ export async function POST(req: Request) {
     } else {
       // 단일가: 참가자 성별(남/여) 직접 입력 → 인원 현황 남/여 카운트 반영
       const g = t.gender === "male" || t.gender === "female" ? t.gender : null;
+      // 성비 임시마감된 성별 차단 (옵션이 없는 모임도 반드시 막아야 한다)
+      if ((g === "male" && meeting.closed_male) || (g === "female" && meeting.closed_female)) {
+        return NextResponse.json({ error: "gender_closed" }, { status: 409 });
+      }
       rows.push({ amount: meeting.price, option_id: null, option_label: null, gender: g });
     }
   }

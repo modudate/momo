@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdminAllowed } from "@/lib/admin";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { getBlacklistSet, normPhone } from "@/lib/blacklist";
+import { expireStaleOrders } from "@/lib/expire";
 
 type DbOrder = {
   id: string;
@@ -42,6 +43,9 @@ export async function GET(req: Request) {
   if (!admin) {
     return NextResponse.json({ error: "not_configured" }, { status: 503 });
   }
+
+  // 기한 지난 결제대기 정리 (자리는 반납됐는데 "결제대기" 로 남는 것 방지)
+  await expireStaleOrders(admin);
 
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") ?? "").trim().toLowerCase();

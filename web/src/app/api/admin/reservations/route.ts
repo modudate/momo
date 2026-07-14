@@ -3,6 +3,7 @@ import { isAdminAllowed } from "@/lib/admin";
 import { getAdminClient } from "@/lib/supabase/admin";
 import { regions } from "@/data/moim-data";
 import { holdsSeat, SEAT_STATUSES } from "@/lib/orders";
+import { expireStaleOrders } from "@/lib/expire";
 
 const VALID_REGIONS = new Set<string>(regions.map((r) => r.slug));
 
@@ -17,6 +18,9 @@ export async function GET(req: Request) {
   if (!supabaseAdmin) {
     return NextResponse.json({ error: "not_configured" }, { status: 503 });
   }
+
+  // 기한 지난 결제대기 정리 (자리는 반납됐는데 "결제대기" 로 남는 것 방지)
+  await expireStaleOrders(supabaseAdmin);
 
   const url = new URL(req.url);
   const month = url.searchParams.get("month") ?? ""; // YYYY-MM

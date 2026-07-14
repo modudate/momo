@@ -2524,6 +2524,13 @@ body.with-bottom-nav .site-footer {
   font-weight: 700;
   cursor: pointer;
 }
+/* 성비 조정으로 마감된 성별 */
+.att-gender button:disabled {
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
 .att-gender button.is-on.male {
   border-color: #3182f6;
   background: #e8f3ff;

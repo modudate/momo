@@ -203,6 +203,7 @@ export default function MeetingDetailPage() {
   const selfReady = Boolean(selfMeta.name && selfMeta.phone && selfMeta.birth_year);
 
   const submitOrder = async () => {
+    if (!meeting) return;
     // 참가자 정보 검증 (본인 포함 시 참가자 1은 회원정보 사용)
     for (let i = 0; i < attendees.length; i++) {
       if (includeSelf && i === 0) {
@@ -214,6 +215,13 @@ export default function MeetingDetailPage() {
           setErrorMessage("회원정보에 성별이 없어요. 본인 포함을 해제하고 직접 입력해 주세요.");
           return;
         }
+        // 성비 조정으로 마감된 성별은 신청 불가 (옵션 없는 모임)
+        if (!pickedTickets[0]?.optionId && isGenderClosed(meeting, selfMeta.gender ?? "")) {
+          setErrorMessage(
+            `${genderLabel(selfMeta.gender ?? "")}은 성비 조정으로 마감됐어요. 다른 일정을 선택해 주세요.`,
+          );
+          return;
+        }
         continue;
       }
       const a = attendees[i];
@@ -223,6 +231,13 @@ export default function MeetingDetailPage() {
       }
       if (!pickedTickets[i]?.optionId && a.gender !== "male" && a.gender !== "female") {
         setErrorMessage("모든 참가자의 성별을 선택해 주세요.");
+        return;
+      }
+      // 성비 조정으로 마감된 성별은 신청 불가 (옵션 없는 모임)
+      if (!pickedTickets[i]?.optionId && isGenderClosed(meeting, a.gender)) {
+        setErrorMessage(
+          `${genderLabel(a.gender)}은 성비 조정으로 마감됐어요. 다른 일정을 선택해 주세요.`,
+        );
         return;
       }
       const y = Number(a.birthYear);
@@ -577,23 +592,28 @@ export default function MeetingDetailPage() {
                         />
                         {!t.optionId && (
                           <div className="att-gender">
+                            {/* 성비 조정으로 마감된 성별은 아예 고를 수 없다 */}
                             <button
                               type="button"
                               className={attendees[i]?.gender === "male" ? "is-on male" : ""}
+                              disabled={meeting.closed_male}
+                              title={meeting.closed_male ? "남성은 성비 조정으로 마감됐어요" : undefined}
                               onClick={() =>
                                 setAttendees((prev) => prev.map((a, idx) => (idx === i ? { ...a, gender: "male" } : a)))
                               }
                             >
-                              남성
+                              남성{meeting.closed_male ? " (마감)" : ""}
                             </button>
                             <button
                               type="button"
                               className={attendees[i]?.gender === "female" ? "is-on female" : ""}
+                              disabled={meeting.closed_female}
+                              title={meeting.closed_female ? "여성은 성비 조정으로 마감됐어요" : undefined}
                               onClick={() =>
                                 setAttendees((prev) => prev.map((a, idx) => (idx === i ? { ...a, gender: "female" } : a)))
                               }
                             >
-                              여성
+                              여성{meeting.closed_female ? " (마감)" : ""}
                             </button>
                           </div>
                         )}
