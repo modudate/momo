@@ -2,7 +2,7 @@
 
 export const REFUND_POLICY: string[] = [
   "모임 2일 전까지 취소 시 100% 환불됩니다.",
-  "모임 전날·당일 취소 시 50%만 환불됩니다.",
+  "모임 전날·당일 취소 시 환불이 불가합니다.",
   "단, 신청 후 1시간 이내 취소 시에는 전날·당일이어도 100% 환불됩니다.",
 ];
 
@@ -28,13 +28,13 @@ function previousDate(dateStr: string) {
 
 // 환불 비율(%) — 결제(PG) 연동 후 취소 처리에 사용
 //  · 신청 후 1시간 이내 취소 → 100%
-//  · 모임 전날·당일 취소 → 50%
+//  · 모임 전날·당일 취소 → 0% (환불 불가)
 //  · 그 외(2일 전 이상) → 100%
 export function computeRefundRate(opts: {
   appliedAtMs: number;
   cancelAtMs: number;
   meetingDate: string; // YYYY-MM-DD (KST)
-}): 100 | 50 {
+}): 100 | 0 {
   const { appliedAtMs, cancelAtMs, meetingDate } = opts;
 
   // 신청 후 1시간 이내 취소는 무조건 100%
@@ -42,7 +42,7 @@ export function computeRefundRate(opts: {
 
   const cancelDay = kstDateString(cancelAtMs);
   if (cancelDay === meetingDate || cancelDay === previousDate(meetingDate)) {
-    return 50;
+    return 0;
   }
   return 100;
 }

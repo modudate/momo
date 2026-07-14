@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, Ticket, CalendarDays, Shield, ChevronRight, PenLine } from "lucide-react";
+import { LogOut, Ticket, CalendarDays, Shield, ChevronRight, PenLine, User } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import SiteFooter from "@/components/SiteFooter";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
@@ -32,6 +32,13 @@ export default function MyPage() {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
   const [name, setName] = useState<string>("");
+  const [profile, setProfile] = useState<{
+    name: string;
+    phone: string;
+    birth_year: number | null;
+    gender: string;
+  } | null>(null);
+  const [profileComplete, setProfileComplete] = useState(true);
   const [orders, setOrders] = useState<OrderRow[] | null>(null);
   const [writable, setWritable] = useState<Set<string>>(new Set());
   const [ready, setReady] = useState(false);
@@ -53,6 +60,25 @@ export default function MyPage() {
       setEmail(authUser.email ?? null);
       setName((authUser.user_metadata?.name as string) ?? "");
       setReady(true);
+
+      // 개인정보 (관리자 화면과 같은 profiles 기준)
+      fetch("/api/profile")
+        .then((r) => (r.ok ? r.json() : null))
+        .then(
+          (
+            d: {
+              profile: { name: string; phone: string; birth_year: number | null; gender: string };
+              complete: boolean;
+            } | null,
+          ) => {
+            if (d) {
+              setProfile(d.profile);
+              setProfileComplete(d.complete);
+              if (d.profile.name) setName(d.profile.name);
+            }
+          },
+        )
+        .catch(() => {});
 
       const { data: orderRows } = await supabase
         .from("orders")
@@ -116,6 +142,46 @@ export default function MyPage() {
           >
             <LogOut size={15} /> 로그아웃
           </button>
+        </div>
+      </section>
+
+      {/* 내 개인정보 */}
+      <section className="page-content pt-6">
+        <h3 className="tds-title-md mb-3 flex items-center gap-1.5">
+          <User size={18} /> 내 정보
+        </h3>
+
+        {!profileComplete && (
+          <Link href="/profile" className="mp-info-alert">
+            <span>모임 신청에 필요한 정보가 비어 있어요. 지금 입력하기</span>
+            <ChevronRight size={18} />
+          </Link>
+        )}
+
+        <div className="tds-card p-4">
+          <dl className="mp-info">
+            <div>
+              <dt>이름</dt>
+              <dd>{profile?.name || "-"}</dd>
+            </div>
+            <div>
+              <dt>전화번호</dt>
+              <dd>{profile?.phone || "-"}</dd>
+            </div>
+            <div>
+              <dt>출생년도</dt>
+              <dd>{profile?.birth_year || "-"}</dd>
+            </div>
+            <div>
+              <dt>성별</dt>
+              <dd>
+                {profile?.gender === "male" ? "남성" : profile?.gender === "female" ? "여성" : "-"}
+              </dd>
+            </div>
+          </dl>
+          <Link href="/profile" className="mp-info-edit">
+            <PenLine size={14} /> 정보 수정
+          </Link>
         </div>
       </section>
 

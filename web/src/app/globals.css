@@ -971,6 +971,59 @@ body {
   border-color: var(--accent-primary);
 }
 
+/* 마이페이지 — 내 정보 */
+.mp-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+.mp-info > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mp-info dt {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+.mp-info dd {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: right;
+  word-break: keep-all;
+}
+.mp-info-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--border-subtle);
+  width: 100%;
+  justify-content: center;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+.mp-info-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 13px 14px;
+  border-radius: var(--radius-md);
+  background: var(--accent-primary-light);
+  color: var(--accent-primary);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
 /* 소셜 로그인 구분선 */
 .auth-divider {
   display: flex;
@@ -1408,6 +1461,7 @@ body {
   z-index: 40;
   display: flex;
   align-items: center;
+  justify-content: center; /* 가운데 정렬 */
   gap: min(44px, 6vw); /* 좁은 화면에서 자동 축소 */
   padding: 15px min(28px, 5vw);
   background: rgba(255, 255, 255, 0.94);

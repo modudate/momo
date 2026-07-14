@@ -149,8 +149,7 @@ export type VerifyPlan = {
   subtitle: string;
   fee: number; // 참가비 (계좌이체)
   perks: string[];
-  // 저희가 제작한 랜딩페이지 + 스모어 계좌이체 링크 (TODO: 실제 값으로 교체)
-  landingUrl: string;
+  // 인증 신청 스모어 폼 — [인증 신청하기] 누르면 새 창으로 바로 연결
   smoreUrl: string;
 };
 
@@ -166,8 +165,7 @@ export const verifyPlans: VerifyPlan[] = [
       "소수 정예 프리미엄 모임 우선 초대",
       "전담 매니저 1:1 케어",
     ],
-    landingUrl: "https://moaum.example/premium", // TODO: 제작한 랜딩페이지
-    smoreUrl: "https://moaform.com/q/PREMIUM", // TODO: 스모어 신청폼
+    smoreUrl: "https://smore.im/quiz/63hCFufEJq",
   },
   {
     slug: "popular",
@@ -180,8 +178,7 @@ export const verifyPlans: VerifyPlan[] = [
       "인기 남녀 전용 모임 참여 자격",
       "매칭 우선권 제공",
     ],
-    landingUrl: "https://moaum.example/popular", // TODO: 제작한 랜딩페이지
-    smoreUrl: "https://moaform.com/q/POPULAR", // TODO: 스모어 신청폼
+    smoreUrl: "https://smore.im/quiz/DOUshlP1y7",
   },
 ];
 

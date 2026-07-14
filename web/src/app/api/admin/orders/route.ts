@@ -53,7 +53,7 @@ type PaidOrder = {
 // 주문 취소 (관리자)
 //  · 결제완료 건이면 환불 규정에 따라 KCP 환불까지 실행
 //    - 100% 환불 → 남은 금액이 0이면 전체취소(STSC), 아니면 부분취소(STPC)
-//    - 50%  환불 → 부분취소(STPC)
+//    - 0%   환불(전날·당일) → KCP 취소 호출 없이 상태만 취소
 //  · 다인 결제(한 거래에 여러 티켓)는 이 티켓 몫만 부분취소한다
 export async function PATCH(req: Request) {
   if (!(await isAdminAllowed())) {
