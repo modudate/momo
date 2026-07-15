@@ -2774,7 +2774,16 @@ select.auth-input {
   width: 100%;
   height: auto;
   display: block;
-  margin: 10px 0;
+  margin: 0; /* 기본 여백 0 — 연속 이미지가 딱 붙는다 */
+}
+/* 이미지만 든 문단도 여백 0 (이미지는 <p><img></p> 로 감싸져 들어온다) */
+.rich-view p:has(> img) {
+  margin: 0;
+}
+/* 단, 이미지와 "글 문단" 사이에는 최소 간격을 준다 (이미지끼리는 계속 0) */
+.rich-view p:not(:has(> img)) + p:has(> img),
+.rich-view p:has(> img) + p:not(:has(> img)) {
+  margin-top: 14px;
 }
 .rich-view hr {
   border: none;
