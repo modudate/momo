@@ -271,12 +271,22 @@ function MeetCard({ label, title, badge, tags, image, href }: HomeCard) {
       <span className="home-card-label">{label}</span>
       <p className="home-meet-title">{title}</p>
       <div className="home-badges">
-        {badge && <span className="home-badge-dark">{badge}</span>}
-        {tags.map((t) => (
-          <span key={t} className="home-tag">
-            {t}
-          </span>
-        ))}
+        {/* 검정 배지 — 한 줄 */}
+        {badge && (
+          <div className="home-badge-row">
+            <span className="home-badge-dark">{badge}</span>
+          </div>
+        )}
+        {/* 회색 태그 — 그 아래 줄 */}
+        {tags.length > 0 && (
+          <div className="home-tag-row">
+            {tags.map((t) => (
+              <span key={t} className="home-tag">
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </Link>
   );

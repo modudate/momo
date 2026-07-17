@@ -1621,9 +1621,17 @@ body {
 }
 .home-badges {
   display: flex;
-  flex-wrap: wrap; /* 문구·나이대가 길면 다음 줄로 (잘리지 않게) */
-  gap: 4px;
+  flex-direction: column; /* 검정 배지 줄 / 회색 태그 줄을 위아래로 */
+  gap: 6px;
   margin-top: 10px;
+  min-width: 0;
+}
+/* 각 줄은 좌측 정렬 flex (태그가 여러 개면 옆으로, 넘치면 다음 줄로) */
+.home-badge-row,
+.home-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
   min-width: 0;
 }
 .home-badge-dark {
