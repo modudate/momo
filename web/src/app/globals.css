@@ -1102,9 +1102,10 @@ body {
 }
 .landing-bottom {
   background:
-    radial-gradient(120% 80% at 50% 100%, rgba(49, 130, 246, 0.4), transparent 60%),
-    url("/moso-mood-bar.webp") center/cover no-repeat,
-    #0c1322;
+    /* 사진이 따뜻한 크림톤이라 파란 틴트를 걷어내고 톤을 맞춤 */
+    radial-gradient(120% 80% at 50% 100%, rgba(120, 82, 54, 0.35), transparent 60%),
+    url("/main_moso.jpg") center/cover no-repeat,
+    #2a201a;
 }
 .landing-overlay {
   position: absolute;
@@ -1114,7 +1115,7 @@ body {
   background: linear-gradient(180deg, rgba(20, 14, 10, 0.35) 0%, rgba(20, 14, 10, 0.78) 100%);
 }
 .landing-overlay-bottom {
-  background: linear-gradient(0deg, rgba(8, 12, 24, 0.4) 0%, rgba(8, 12, 24, 0.82) 100%);
+  background: linear-gradient(0deg, rgba(26, 18, 12, 0.34) 0%, rgba(26, 18, 12, 0.74) 100%);
 }
 .landing-inner {
   position: relative;
