@@ -1144,10 +1144,10 @@ body {
 }
 .landing-bottom {
   background:
-    /* 사진이 따뜻한 크림톤이라 파란 틴트를 걷어내고 톤을 맞춤 */
-    radial-gradient(120% 80% at 50% 100%, rgba(120, 82, 54, 0.35), transparent 60%),
-    url("/main_moso.jpg") center/cover no-repeat,
-    #2a201a;
+    /* 일몰 톤 사진 — 따뜻한 오렌지 틴트로 위쪽(모임)과 톤 연결 */
+    radial-gradient(120% 80% at 50% 100%, rgba(200, 90, 40, 0.32), transparent 60%),
+    url("/foot.webp") center/cover no-repeat,
+    #2a1610;
 }
 .landing-overlay {
   position: absolute;
