@@ -36,6 +36,7 @@ import SectionsPanel, { type HomeSection } from "./SectionsPanel";
 import ReviewsPanel from "./ReviewsPanel";
 import HomeReviewsPanel from "./HomeReviewsPanel";
 import FaqPanel from "./FaqPanel";
+import InquiriesPanel from "./InquiriesPanel";
 import { uploadImage } from "@/lib/uploadImage";
 
 type AdminTab =
@@ -48,6 +49,7 @@ type AdminTab =
   | "banner"
   | "sections"
   | "faq"
+  | "inquiries"
   | "push";
 
 type Template = {
@@ -101,6 +103,7 @@ const NAV: { key: AdminTab; label: string; icon: typeof Package }[] = [
   { key: "banner", label: "홈 배너", icon: ImageIcon },
   { key: "sections", label: "홈 카테고리", icon: LayoutList },
   { key: "faq", label: "자주 묻는 질문", icon: HelpCircle },
+  { key: "inquiries", label: "1:1 문의", icon: MessageSquare },
   { key: "push", label: "푸시 알림", icon: Bell },
 ];
 
@@ -114,6 +117,7 @@ const TAB_META: Record<AdminTab, { title: string; sub: string }> = {
   banner: { title: "홈 배너", sub: "메인 상단 슬라이드 이미지·문구 관리" },
   sections: { title: "홈 카테고리", sub: "홈에 노출되는 모임 섹션 추가·이름수정·순서" },
   faq: { title: "자주 묻는 질문", sub: "FAQ 페이지의 질문·답변 추가·수정·순서" },
+  inquiries: { title: "1:1 문의", sub: "회원이 남긴 문의 확인 · 답변 작성" },
   push: { title: "푸시 알림", sub: "전체 구독자에게 발송" },
 };
 
@@ -417,6 +421,8 @@ export default function AdminPage() {
 
           {/* 자주 묻는 질문 */}
           {tab === "faq" && <FaqPanel flash={flash} />}
+
+          {tab === "inquiries" && <InquiriesPanel flash={flash} />}
 
           {/* 푸시 */}
           {tab === "push" && (

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LogOut, Ticket, CalendarDays, Shield, ChevronRight, PenLine, User } from "lucide-react";
+import { LogOut, Ticket, CalendarDays, Shield, ChevronRight, PenLine, User, MessageSquareText } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import SiteFooter from "@/components/SiteFooter";
 import PushSubscribeButton from "@/components/PushSubscribeButton";
@@ -20,6 +20,16 @@ type OrderRow = {
 
 // 후기 작성 가능한 예약 (예약 1건당 1개, 이미 쓴 건 제외)
 type WritableOrder = { id: string };
+
+type Inquiry = {
+  id: string;
+  title: string;
+  content: string;
+  status: string;
+  answer: string | null;
+  answered_at: string | null;
+  created_at: string;
+};
 
 const statusLabel: Record<OrderRow["status"], string> = {
   paid: "결제완료",
@@ -40,6 +50,8 @@ export default function MyPage() {
   } | null>(null);
   const [profileComplete, setProfileComplete] = useState(true);
   const [orders, setOrders] = useState<OrderRow[] | null>(null);
+  const [inquiries, setInquiries] = useState<Inquiry[] | null>(null);
+  const [openInquiry, setOpenInquiry] = useState<string | null>(null);
   const [writable, setWritable] = useState<Set<string>>(new Set());
   const [ready, setReady] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -85,6 +97,21 @@ export default function MyPage() {
         .select("id,amount,status,created_at,meetings(title,date,time)")
         .order("created_at", { ascending: false });
       setOrders((orderRows as OrderRow[] | null) ?? []);
+
+      // 내 1:1 문의 내역
+      fetch("/api/inquiries")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d: { inquiries: Inquiry[] } | null) => {
+          setInquiries(d?.inquiries ?? []);
+          // 문의 작성 후 넘어온 경우(#inquiries) 해당 섹션으로 스크롤
+          if (window.location.hash === "#inquiries") {
+            setTimeout(
+              () => document.getElementById("inquiries")?.scrollIntoView({ behavior: "smooth" }),
+              100,
+            );
+          }
+        })
+        .catch(() => setInquiries([]));
 
       // 후기 작성 가능한 예약 (이미 쓴 건 제외)
       fetch("/api/reviews/writable")
@@ -183,6 +210,70 @@ export default function MyPage() {
             <PenLine size={14} /> 정보 수정
           </Link>
         </div>
+      </section>
+
+      {/* 내 문의 (1:1) */}
+      <section id="inquiries" className="page-content pt-6">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="tds-title-md flex items-center gap-1.5">
+            <MessageSquareText size={18} /> 내 문의
+          </h3>
+          <Link
+            href="/contact/inquiry"
+            className="text-[13px] font-bold text-[var(--accent-primary)]"
+          >
+            문의하기
+          </Link>
+        </div>
+
+        {inquiries === null ? (
+          <p className="tds-caption py-4 text-center">불러오는 중…</p>
+        ) : inquiries.length === 0 ? (
+          <div className="tds-card p-6 text-center">
+            <p className="tds-caption">아직 남긴 문의가 없어요.</p>
+          </div>
+        ) : (
+          <div>
+            {inquiries.map((q) => {
+              const open = openInquiry === q.id;
+              return (
+                <div key={q.id} className="inq-item">
+                  <button
+                    type="button"
+                    className="inq-head w-full"
+                    onClick={() => setOpenInquiry(open ? null : q.id)}
+                  >
+                    <span className="inq-head-title">{q.title}</span>
+                    <span
+                      className={`inq-badge ${q.status === "answered" ? "inq-badge-answered" : "inq-badge-open"}`}
+                    >
+                      {q.status === "answered" ? "답변완료" : "답변대기"}
+                    </span>
+                    <ChevronRight
+                      size={17}
+                      className="text-[var(--text-muted)] shrink-0"
+                      style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform .15s" }}
+                    />
+                  </button>
+                  {open && (
+                    <div className="inq-body">
+                      <p className="inq-content">{q.content}</p>
+                      <p className="inq-date">
+                        {new Date(q.created_at).toLocaleDateString("ko-KR")} 문의
+                      </p>
+                      {q.answer && (
+                        <div className="inq-answer">
+                          <p className="inq-answer-label">운영진 답변</p>
+                          <p className="inq-answer-text">{q.answer}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* 관리자 전용 링크 */}

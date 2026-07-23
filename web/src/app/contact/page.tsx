@@ -1,6 +1,7 @@
 "use client";
 
-import { Phone, Instagram, MessageCircle, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { Phone, Instagram, MessageCircle, ChevronRight, PenSquare } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import SiteFooter from "@/components/SiteFooter";
 import { SITE } from "@/data/moim-data";
@@ -68,6 +69,24 @@ export default function ContactPage() {
             <ChevronRight size={20} className="text-[var(--text-muted)]" />
           </a>
         ))}
+
+        {/* 1:1 문의 — 글로 남기고 마이페이지에서 답변 확인 */}
+        <Link
+          href="/contact/inquiry"
+          className="tds-card flex items-center gap-3.5 p-4 active:scale-[0.99] transition-transform"
+        >
+          <span
+            className="flex items-center justify-center w-12 h-12 rounded-[var(--radius-md)] shrink-0"
+            style={{ background: "var(--accent-primary-light)", color: "var(--accent-primary)" }}
+          >
+            <PenSquare size={20} />
+          </span>
+          <div className="flex-1">
+            <p className="text-[16px] font-bold">1:1 문의</p>
+            <p className="tds-caption mt-0.5">글로 남기면 운영진이 답변드려요</p>
+          </div>
+          <ChevronRight size={20} className="text-[var(--text-muted)]" />
+        </Link>
       </section>
 
       <SiteFooter />
