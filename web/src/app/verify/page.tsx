@@ -3,7 +3,7 @@
 import { Crown, Heart } from "lucide-react";
 import TopNav from "@/components/TopNav";
 import SiteFooter from "@/components/SiteFooter";
-import { verifyPlans, formatKRW, type VerifyPlan } from "@/data/moim-data";
+import { verifyPlans, type VerifyPlan } from "@/data/moim-data";
 
 const icons: Record<VerifyPlan["slug"], React.ReactNode> = {
   premium: <Crown size={22} strokeWidth={2.2} />,
@@ -45,10 +45,6 @@ export default function VerifyPage() {
                 </div>
               </div>
               <p className="tds-subtitle mt-3">{p.subtitle}</p>
-              <div className="flex items-center justify-between mt-4">
-                <span className="tds-caption">참가비 (계좌이체)</span>
-                <span className="text-[18px] font-extrabold">{formatKRW(p.fee)}</span>
-              </div>
               <div className="mt-4 h-12 flex items-center justify-center rounded-[var(--radius-md)] bg-[var(--accent-primary)] text-white font-bold text-[15px]">
                 인증 신청하기
               </div>

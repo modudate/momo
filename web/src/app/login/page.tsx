@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Check } from "lucide-react";
 import TopNav from "@/components/TopNav";
-import { getBrowserClient } from "@/lib/supabase/browser";
+import { getBrowserClient, setRememberMe } from "@/lib/supabase/browser";
 
 // 구글 로고 (공식 4색)
 function GoogleMark() {
@@ -43,6 +44,7 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [remember, setRemember] = useState(true); // 자동 로그인 7일 (기본 켜짐)
 
   // 콜백에서 실패해 돌아온 경우 안내
   useEffect(() => {
@@ -53,6 +55,7 @@ export default function LoginPage() {
 
   const handleGoogle = async () => {
     setErrorMessage("");
+    setRememberMe(remember); // 쿠키 수명 결정 (클라이언트 생성 전에)
     const supabase = getBrowserClient();
     if (!supabase) {
       setErrorMessage("인증 설정이 필요합니다.");
@@ -75,6 +78,7 @@ export default function LoginPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setErrorMessage("");
+    setRememberMe(remember); // 쿠키 수명 결정 (클라이언트 생성 전에)
     const supabase = getBrowserClient();
     if (!supabase) {
       setErrorMessage("인증 설정이 필요합니다.");
@@ -128,6 +132,18 @@ export default function LoginPage() {
           className="auth-input"
           required
         />
+
+        <label className="auth-remember">
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
+          />
+          <span className="auth-remember-box" aria-hidden>
+            {remember && <Check size={13} strokeWidth={3} />}
+          </span>
+          자동 로그인 (7일 유지)
+        </label>
 
         {errorMessage && <p className="text-[13px] text-[#FF4D4F]">{errorMessage}</p>}
 

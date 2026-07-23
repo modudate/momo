@@ -57,7 +57,7 @@ export default function LandingPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/moso_logo.png" alt="모두의 소개팅" className="landing-logo landing-logo-moso" />
           <p className="landing-sub landing-sub-light">진지한 만남을 원한다면, 이쪽으로</p>
-          <span className="landing-cta landing-cta-light">
+          <span className="landing-cta">
             소개팅 바로가기 <ArrowRight size={18} strokeWidth={2.4} />
           </span>
         </div>

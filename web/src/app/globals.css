@@ -1024,6 +1024,48 @@ body {
   font-weight: 700;
 }
 
+/* 자동 로그인 체크박스 */
+.auth-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+.auth-remember input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.auth-remember-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border-strong);
+  background: #fff;
+  color: #fff;
+  flex-shrink: 0;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+.auth-remember input:checked + .auth-remember-box {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+.auth-remember input:focus-visible + .auth-remember-box {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
 /* 소셜 로그인 구분선 */
 .auth-divider {
   display: flex;
