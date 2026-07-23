@@ -2903,6 +2903,12 @@ select.auth-input {
 .moim-apply-btn:active {
   transform: scale(0.97);
 }
+/* 인증형 상품 — 버튼 하나를 넓게 */
+.moim-apply-btn-verify {
+  max-width: 320px;
+  width: 100%;
+  font-size: 15.5px;
+}
 
 /* ---- Sheet / Modal ---- */
 .sheet-backdrop {
